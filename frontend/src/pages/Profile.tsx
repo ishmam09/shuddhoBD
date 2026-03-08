@@ -256,6 +256,17 @@ export default function Profile() {
                                 <span className="text-slate-700 font-medium">Mar 2024</span>
                             </div>
                         </div>
+                        <div className="mt-6 pt-6 border-t border-slate-50">
+                            <button
+                                onClick={(e) => { e.preventDefault(); logout(); fetch(`${API_BASE}/auth/logout`, { method: "POST", credentials: "include" }); }}
+                                className="w-full flex items-center justify-center gap-2 bg-slate-100 text-slate-700 rounded-xl py-2.5 font-semibold text-sm hover:bg-slate-200 transition-colors shadow-sm"
+                            >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                </svg>
+                                Log Out
+                            </button>
+                        </div>
                     </section>
 
                     <section className="bg-rose-50/50 rounded-3xl p-6 border border-rose-100 border-dashed">

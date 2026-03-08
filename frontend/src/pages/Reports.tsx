@@ -36,7 +36,7 @@ export default function Reports() {
                 credentials: 'include',
                 body: JSON.stringify(newReport)
             });
-            
+
             if (res.ok) {
                 setNewReport({ title: '', description: '', location: '' });
                 setIsModalOpen(false);
@@ -71,12 +71,12 @@ export default function Reports() {
 
             {/* Filter Bar */}
             <div className="flex flex-col md:flex-row items-center w-full gap-4 mb-8">
-                <input 
-                    type="text" 
-                    placeholder="Search by Report ID / Keyword / Location" 
+                <input
+                    type="text"
+                    placeholder="Search by Report ID / Keyword / Location"
                     className="flex-1 bg-shuddho-card border border-shuddho-border rounded-xl px-4 py-3 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-slate-500 w-full"
                 />
-                
+
                 <select className="bg-shuddho-card border border-shuddho-border rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-slate-500 w-full md:w-48 appearance-none">
                     <option>Category : All</option>
                 </select>
@@ -85,7 +85,7 @@ export default function Reports() {
                     <option>Severity : All</option>
                 </select>
 
-                <button 
+                <button
                     onClick={() => setIsModalOpen(true)}
                     className="bg-shuddho-neon text-black font-semibold rounded-xl px-6 py-3 w-full md:w-auto text-sm hover:brightness-110 transition-all flex items-center justify-center gap-2"
                 >
@@ -106,13 +106,13 @@ export default function Reports() {
                                     {report.category}
                                 </span>
                             </div>
-                            
+
                             <h3 className="text-lg font-bold text-white mb-2 leading-snug">{report.title}</h3>
-                            
+
                             <p className="text-slate-400 text-sm flex-1 mb-6 leading-relaxed">
                                 {report.description}
                             </p>
-                            
+
                             <div className="mt-auto space-y-2 pt-4 border-t border-shuddho-border">
                                 <div className="text-sm flex justify-between">
                                     <span className="text-slate-400">Severity: </span>
@@ -143,38 +143,38 @@ export default function Reports() {
                         <form onSubmit={handleSubmit} className="p-6 space-y-4">
                             <div>
                                 <label className="block text-sm font-medium text-slate-300 mb-1">Incident Title</label>
-                                <input 
+                                <input
                                     required
-                                    type="text" 
+                                    type="text"
                                     value={newReport.title}
-                                    onChange={e => setNewReport({...newReport, title: e.target.value})}
+                                    onChange={e => setNewReport({ ...newReport, title: e.target.value })}
                                     className="w-full bg-shuddho-card border border-shuddho-border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-shuddho-neon"
                                     placeholder="e.g. Broken road construction paused"
                                 />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-slate-300 mb-1">Description</label>
-                                <textarea 
+                                <textarea
                                     required
                                     rows={4}
                                     value={newReport.description}
-                                    onChange={e => setNewReport({...newReport, description: e.target.value})}
+                                    onChange={e => setNewReport({ ...newReport, description: e.target.value })}
                                     className="w-full bg-shuddho-card border border-shuddho-border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-shuddho-neon resize-none"
                                     placeholder="Include detailed keywords (e.g. bribe, missing equipment, contractor...)"
                                 ></textarea>
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-slate-300 mb-1">Location</label>
-                                <input 
+                                <input
                                     required
-                                    type="text" 
+                                    type="text"
                                     value={newReport.location}
-                                    onChange={e => setNewReport({...newReport, location: e.target.value})}
+                                    onChange={e => setNewReport({ ...newReport, location: e.target.value })}
                                     className="w-full bg-shuddho-card border border-shuddho-border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-shuddho-neon"
                                     placeholder="e.g. Mirpur 1"
                                 />
                             </div>
-                            <button 
+                            <button
                                 type="submit"
                                 className="w-full bg-shuddho-neon text-black font-bold rounded-lg px-4 py-3 mt-4 hover:brightness-110 transition-colors"
                             >

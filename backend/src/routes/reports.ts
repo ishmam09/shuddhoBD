@@ -27,7 +27,7 @@ const CATEGORY_RULES = [
 // Helper to analyze text and determine category and severity
 const analyzeReport = (text: string) => {
     const lowerText = text.toLowerCase();
-    
+
     let bestCategory = 'Other';
     let maxMatches = 0;
     let totalSeverityScore = 0;
@@ -101,6 +101,59 @@ router.post('/', authMiddleware, async (req: any, res) => {
         res.status(201).json(newReport);
     } catch (err: any) {
         res.status(500).json({ error: 'Failed to create report' });
+    }
+});
+
+// POST new anonymous report (Requires Auth to prevent spam, but strips identity)
+import crypto from 'crypto';
+import { upload } from '../utils/upload';
+
+// @ts-ignore
+router.post('/anonymous', authMiddleware, upload.single('image'), async (req: AuthRequest, res: express.Response) => {
+    try {
+        const { title, description, location } = req.body;
+
+        if (!title || !description || !location) {
+            return res.status(400).json({ error: 'Title, description, and location are required' });
+        }
+
+        const combinedText = `${title} ${description}`;
+        const analysis = analyzeReport(combinedText);
+
+        // Generate a 16-character (8 bytes) hex tracking ID
+        const trackingId = crypto.randomBytes(8).toString('hex').toUpperCase();
+
+        let imageUrl = null;
+        if (req.file) {
+            imageUrl = `/uploads/${req.file.filename}`;
+        }
+
+        const newReport = new Report({
+            // Notice: `author` is NOT set here, preserving anonymity
+            title,
+            description,
+            location,
+            image: imageUrl,
+            category: analysis.category,
+            severity: analysis.severity,
+            severityScore: analysis.severityScore,
+            isAnonymous: true,
+            trackingId
+        });
+
+        // The IP address and User-Agent from `req` are completely ignored and not saved.
+
+        await newReport.save();
+
+        // Return only what is necessary, including the tracking ID for the citizen
+        res.status(201).json({
+            message: 'Report submitted autonomously and securely.',
+            trackingId,
+            category: analysis.category,
+            severity: analysis.severity,
+        });
+    } catch (err: any) {
+        res.status(500).json({ error: 'Failed to submit anonymous report' });
     }
 });
 

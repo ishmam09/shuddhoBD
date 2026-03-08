@@ -4,7 +4,16 @@ const ReportSchema = new mongoose.Schema({
     author: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
-        required: true
+        required: false // Optional for anonymous reports
+    },
+    isAnonymous: {
+        type: Boolean,
+        default: false
+    },
+    trackingId: {
+        type: String, // Encrypted unique ID given to the user
+        sparse: true,
+        unique: true
     },
     title: {
         type: String,
@@ -14,6 +23,10 @@ const ReportSchema = new mongoose.Schema({
     description: {
         type: String,
         required: true
+    },
+    image: {
+        type: String,
+        default: null
     },
     location: {
         type: String,
