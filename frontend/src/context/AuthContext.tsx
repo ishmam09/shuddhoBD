@@ -31,7 +31,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     useEffect(() => {
         const fetchUser = async () => {
             try {
-                const API_BASE = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:5000/api`;
+                const API_BASE = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:5001/api`;
                 const res = await fetch(`${API_BASE}/auth/me`, {
                     credentials: "include",
                 });

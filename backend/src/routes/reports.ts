@@ -1,6 +1,9 @@
 import express from 'express';
 import Report from '../models/Report';
-import { authMiddleware } from '../middleware/auth';
+import { authMiddleware, AuthRequest } from '../middleware/auth';
+import { uploadMemory, cloudinary } from '../utils/cloudinary';
+import { Readable } from 'stream';
+import crypto from 'crypto';
 
 const router = express.Router();
 
@@ -64,76 +67,231 @@ const analyzeReport = (text: string) => {
     };
 };
 
-// GET all reports
-router.get('/', async (req, res) => {
+// GET all verified reports (Public)
+router.get('/', async (req: express.Request, res: express.Response) => {
     try {
-        const reports = await Report.find().sort({ createdAt: -1 }).populate('author', 'name role profileImage');
+        const query = { status: 'Verified' };
+        const reports = await (Report as any).find(query).sort({ createdAt: -1 }).populate('author', 'name role profileImage');
         res.json(reports);
     } catch (err: any) {
         res.status(500).json({ error: 'Failed to fetch reports' });
     }
 });
 
+// GET all reports for moderation (Admin only)
+// @ts-ignore
+router.get('/moderation', authMiddleware, async (req: AuthRequest, res: express.Response) => {
+    try {
+        console.log(`[MODERATION] Fetch request by user: ${req.user?._id} (${(req.user as any).role})`);
+        if ((req.user as any).role !== 'admin') {
+            return res.status(403).json({ error: 'Access denied. Admin only.' });
+        }
+        const reports = await (Report as any).find({ status: 'Pending' }).sort({ createdAt: -1 }).populate('author', 'name role profileImage');
+        res.json(reports);
+    } catch (err: any) {
+        res.status(500).json({ error: 'Failed to fetch moderation reports' });
+    }
+});
+
+// GET Dashboard stats
+// @ts-ignore
+router.get('/stats', authMiddleware, async (req: AuthRequest, res: express.Response) => {
+    try {
+        const userId = (req.user as any)._id;
+        const role = (req.user as any).role;
+
+        if (role === 'citizen') {
+            const myReportsCount = await (Report as any).countDocuments({ author: userId });
+            // You could also add other citizen specific stats here
+            res.json({
+                myReports: myReportsCount,
+                projectsFollowed: 0 // Placeholder for future feature
+            });
+        } else {
+            // Admin/Analyst stats
+            const highSeverityCount = await (Report as any).countDocuments({ severity: 'High' });
+            const verifiedCount = await (Report as any).countDocuments({ status: 'Verified' });
+            const pendingCount = await (Report as any).countDocuments({ status: 'Pending' });
+
+            res.json({
+                highSeverity: highSeverityCount,
+                verified: verifiedCount,
+                pending: pendingCount
+            });
+        }
+    } catch (err: any) {
+        res.status(500).json({ error: 'Failed to fetch dashboard statistics' });
+    }
+});
+
+// PATCH moderate report (Admin only)
+// @ts-ignore
+router.patch('/moderate/:id', authMiddleware, async (req: AuthRequest, res: express.Response) => {
+    try {
+        console.log(`[MODERATION] Update request for ID: ${req.params.id}`);
+        console.log(`[MODERATION] User: ${req.user?._id} Role: ${(req.user as any).role}`);
+        console.log(`[MODERATION] Body:`, req.body);
+        if ((req.user as any).role !== 'admin') {
+            return res.status(403).json({ error: 'Access denied. Admin only.' });
+        }
+
+        const { status, category, severity, severityScore } = req.body;
+        const updateData: any = {};
+
+        if (status) updateData.status = status;
+        if (category) updateData.category = category;
+        if (severity) updateData.severity = severity;
+        if (severityScore !== undefined) updateData.severityScore = severityScore;
+
+        const updatedReport = await (Report as any).findByIdAndUpdate(
+            req.params.id,
+            { $set: updateData },
+            { new: true }
+        );
+
+        if (!updatedReport) {
+            return res.status(404).json({ error: 'Report not found' });
+        }
+
+        res.json(updatedReport);
+    } catch (err: any) {
+        res.status(500).json({ error: 'Failed to moderate report' });
+    }
+});
+
 // POST new report (Requires Auth)
 // @ts-ignore
-router.post('/', authMiddleware, async (req: any, res) => {
+router.post('/', authMiddleware, uploadMemory.array('images', 5), async (req: AuthRequest, res: express.Response) => {
     try {
+        console.log("Standard Report Submission Started");
         const { title, description, location } = req.body;
 
         if (!title || !description || !location) {
             return res.status(400).json({ error: 'Title, description, and location are required' });
         }
 
+        const imageUrls: string[] = [];
+        const files = req.files as Express.Multer.File[];
+
+        if (files && files.length > 0) {
+            console.log(`Uploading ${files.length} media files to Cloudinary...`);
+
+            const uploadPromises = files.map(file => {
+                return new Promise<string>((resolve, reject) => {
+                    const uploadStream = cloudinary.uploader.upload_stream(
+                        {
+                            folder: 'shuddhoBD/reports',
+                            resource_type: 'auto', // Handles both images and videos
+                            quality: 'auto',
+                            fetch_format: 'auto'
+                        },
+                        (error, result) => {
+                            if (error) reject(error);
+                            else resolve((result as any).secure_url);
+                        }
+                    );
+                    Readable.from(file.buffer).pipe(uploadStream);
+                });
+            });
+
+            try {
+                const results = await Promise.all(uploadPromises);
+                imageUrls.push(...results);
+                console.log("Successfully uploaded to Cloudinary:", imageUrls);
+            } catch (uploadErr: any) {
+                console.error("Standard Report Cloudinary Error:", uploadErr);
+                throw uploadErr;
+            }
+        }
+
         const combinedText = `${title} ${description}`;
         const analysis = analyzeReport(combinedText);
 
-        const newReport = new Report({
-            author: req.user._id,
+        const newReport = new (Report as any)({
+            author: (req.user as any)._id,
             title,
             description,
             location,
+            images: imageUrls,
             category: analysis.category,
             severity: analysis.severity,
-            severityScore: analysis.severityScore
+            severityScore: analysis.severityScore,
+            isAnonymous: false
         });
 
         await newReport.save();
         res.status(201).json(newReport);
     } catch (err: any) {
-        res.status(500).json({ error: 'Failed to create report' });
+        console.error("Standard Report Failure:", err);
+        res.status(500).json({ error: 'Failed to create report', details: err.message });
     }
 });
 
-// POST new anonymous report (Requires Auth to prevent spam, but strips identity)
-import crypto from 'crypto';
-import { upload } from '../utils/upload';
+
+// ... categorization code ...
 
 // @ts-ignore
-router.post('/anonymous', authMiddleware, upload.single('image'), async (req: AuthRequest, res: express.Response) => {
+router.post('/anonymous', authMiddleware, uploadMemory.array('images', 5), async (req: AuthRequest, res: express.Response) => {
     try {
+        console.log("Anonymous Report Submission Started (Manual Upload Mode)");
+        console.log("User:", req.user?._id);
+        console.log("Body:", req.body);
+        const files = req.files as Express.Multer.File[];
+        console.log("Files detected:", files ? `${files.length} files` : "0 files");
+
         const { title, description, location } = req.body;
 
         if (!title || !description || !location) {
+            console.log("Missing fields:", { title, description, location });
             return res.status(400).json({ error: 'Title, description, and location are required' });
+        }
+
+        const imageUrls: string[] = [];
+
+        if (files && files.length > 0) {
+            console.log(`Starting Cloudinary upload for ${files.length} secure files...`);
+
+            const uploadPromises = files.map(file => {
+                return new Promise<string>((resolve, reject) => {
+                    const uploadStream = cloudinary.uploader.upload_stream(
+                        {
+                            folder: 'shuddhoBD/reports',
+                            resource_type: 'auto', // Handles both videos and images seamlessly
+                            quality: 'auto',
+                            fetch_format: 'auto'
+                        },
+                        (error, result) => {
+                            if (error) {
+                                console.error("Cloudinary Stream Error:", error);
+                                reject(error);
+                            } else {
+                                resolve((result as any).secure_url);
+                            }
+                        }
+                    );
+                    Readable.from(file.buffer).pipe(uploadStream);
+                });
+            });
+
+            try {
+                const results = await Promise.all(uploadPromises);
+                imageUrls.push(...results);
+                console.log("Cloudinary Upload Success:", imageUrls);
+            } catch (uploadErr: any) {
+                console.error("Cloudinary Upload Process Failed:", uploadErr);
+                throw new Error(`Cloudinary media upload failed: ${uploadErr.message}`);
+            }
         }
 
         const combinedText = `${title} ${description}`;
         const analysis = analyzeReport(combinedText);
-
-        // Generate a 16-character (8 bytes) hex tracking ID
         const trackingId = crypto.randomBytes(8).toString('hex').toUpperCase();
 
-        let imageUrl = null;
-        if (req.file) {
-            imageUrl = `/uploads/${req.file.filename}`;
-        }
-
-        const newReport = new Report({
-            // Notice: `author` is NOT set here, preserving anonymity
+        const newReport = new (Report as any)({
             title,
             description,
             location,
-            image: imageUrl,
+            images: imageUrls,
             category: analysis.category,
             severity: analysis.severity,
             severityScore: analysis.severityScore,
@@ -141,19 +299,42 @@ router.post('/anonymous', authMiddleware, upload.single('image'), async (req: Au
             trackingId
         });
 
-        // The IP address and User-Agent from `req` are completely ignored and not saved.
-
         await newReport.save();
+        console.log("Report saved successfully with tracking ID:", trackingId);
 
-        // Return only what is necessary, including the tracking ID for the citizen
         res.status(201).json({
-            message: 'Report submitted autonomously and securely.',
+            message: 'Report submitted autonomously and securely via Cloudinary.',
             trackingId,
             category: analysis.category,
             severity: analysis.severity,
+            imageUrls
         });
     } catch (err: any) {
-        res.status(500).json({ error: 'Failed to submit anonymous report' });
+        console.error("Anonymous Report Failure Details:", err);
+        res.status(500).json({
+            error: 'Failed to submit anonymous report',
+            details: err.message
+        });
+    }
+});
+
+// DELETE report (Admin only)
+// @ts-ignore
+router.delete('/:id', authMiddleware, async (req: AuthRequest, res: express.Response) => {
+    try {
+        if ((req.user as any).role !== 'admin') {
+            return res.status(403).json({ error: 'Access denied. Admin only.' });
+        }
+
+        const deletedReport = await (Report as any).findByIdAndDelete(req.params.id);
+
+        if (!deletedReport) {
+            return res.status(404).json({ error: 'Report not found' });
+        }
+
+        res.json({ message: 'Report deleted successfully' });
+    } catch (err: any) {
+        res.status(500).json({ error: 'Failed to delete report' });
     }
 });
 

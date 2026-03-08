@@ -1,4 +1,4 @@
-import React from 'react';
+
 
 const MOCK_NEWS = [
     {
@@ -68,12 +68,12 @@ export default function News() {
 
             {/* Filter Bar */}
             <div className="flex flex-col md:flex-row items-center w-full gap-4 mb-8">
-                <input 
-                    type="text" 
-                    placeholder="Search keyword for sentiment analysis..." 
+                <input
+                    type="text"
+                    placeholder="Search keyword for sentiment analysis..."
                     className="flex-1 bg-shuddho-card border border-shuddho-border rounded-xl px-4 py-3 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-slate-500 w-full"
                 />
-                
+
                 <button className="bg-shuddho-card border border-shuddho-border text-white font-semibold rounded-xl px-12 py-3 w-full md:w-auto text-sm hover:bg-slate-800 transition-all flex items-center justify-center">
                     Latest News
                 </button>
@@ -87,24 +87,24 @@ export default function News() {
                         <div className="shrink-0 w-32 h-32 sm:w-40 sm:h-40 bg-slate-800 rounded-xl overflow-hidden relative">
                             {/* Adding a stylised gradient overlay for aesthetic depth */}
                             <div className="absolute inset-0 bg-gradient-to-t from-shuddho-bg/50 to-transparent z-10 w-full h-full"></div>
-                            <img 
-                                src={news.imgUrl} 
+                            <img
+                                src={news.imgUrl}
                                 alt={news.title}
                                 className="w-full h-full object-cover mix-blend-luminosity opacity-80"
                             />
                         </div>
-                        
+
                         {/* Content */}
                         <div className="flex flex-col justify-between py-1 flex-1">
                             <h3 className="text-lg font-bold text-white leading-snug line-clamp-3">{news.title}</h3>
-                            
+
                             <div className="mt-auto space-y-3">
                                 <div className="text-sm text-slate-400 font-medium">
-                                    {news.source} 
-                                    <span className="mx-2">•</span> 
+                                    {news.source}
+                                    <span className="mx-2">•</span>
                                     {news.time}
                                 </div>
-                                
+
                                 <div>
                                     <span className={`px-4 py-1.5 rounded-full text-xs font-bold ${news.sentimentColor}`}>
                                         {news.sentiment}

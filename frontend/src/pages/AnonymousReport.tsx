@@ -1,8 +1,8 @@
 import { useState, useRef } from "react";
 import type { FormEvent, ChangeEvent } from "react";
-import { Shield, MapPin, FileText, Camera, UploadCloud, X, Lock, CheckCircle2 } from "lucide-react";
+import { Shield, MapPin, FileText, Camera, UploadCloud, X, Lock, CheckCircle2, Plus } from "lucide-react";
 
-const API_BASE = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:5000/api`;
+const API_BASE = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:5001/api`;
 
 export default function AnonymousReport() {
     const [form, setForm] = useState({
@@ -10,12 +10,12 @@ export default function AnonymousReport() {
         description: "",
         location: "",
     });
-    const [image, setImage] = useState<File | null>(null);
-    const [imagePreview, setImagePreview] = useState<string | null>(null);
+    const [images, setImages] = useState<File[]>([]);
+    const [imagePreviews, setImagePreviews] = useState<string[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [successData, setSuccessData] = useState<{ trackingId: string; message: string } | null>(null);
-    
+
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -24,20 +24,27 @@ export default function AnonymousReport() {
     };
 
     const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            setImage(file);
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setImagePreview(reader.result as string);
-            };
-            reader.readAsDataURL(file);
+        const files = Array.from(e.target.files || []);
+        if (images.length + files.length > 5) {
+            alert("You can only upload up to 5 files.");
+            return;
+        }
+
+        const newImages = [...images, ...files].slice(0, 5);
+        setImages(newImages);
+
+        const newPreviews = files.map((file) => URL.createObjectURL(file));
+        setImagePreviews([...imagePreviews, ...newPreviews].slice(0, 5));
+
+        if (fileInputRef.current) {
+            fileInputRef.current.value = "";
         }
     };
 
-    const clearImage = () => {
-        setImage(null);
-        setImagePreview(null);
+    const clearImages = () => {
+        setImages([]);
+        imagePreviews.forEach((url) => URL.revokeObjectURL(url));
+        setImagePreviews([]);
         if (fileInputRef.current) {
             fileInputRef.current.value = "";
         }
@@ -54,9 +61,9 @@ export default function AnonymousReport() {
             formData.append("title", form.title);
             formData.append("description", form.description);
             formData.append("location", form.location);
-            if (image) {
-                formData.append("image", image);
-            }
+            images.forEach((image) => {
+                formData.append("images", image);
+            });
 
             const res = await fetch(`${API_BASE}/reports/anonymous`, {
                 method: "POST",
@@ -74,10 +81,10 @@ export default function AnonymousReport() {
                 trackingId: data.trackingId,
                 message: data.message || "Report submitted anonymously and securely.",
             });
-            
+
             // Reset form
             setForm({ title: "", description: "", location: "" });
-            clearImage();
+            clearImages();
         } catch (err: any) {
             setError(err.message || "Something went wrong.");
         } finally {
@@ -102,24 +109,24 @@ export default function AnonymousReport() {
                     <div className="bg-gradient-to-br from-indigo-900/40 to-slate-900 border border-indigo-500/30 rounded-3xl p-10 text-center backdrop-blur-md shadow-2xl relative overflow-hidden">
                         {/* Decorative background blur */}
                         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-1/2 bg-indigo-500/10 blur-[100px] pointer-events-none"></div>
-                        
+
                         <div className="relative z-10 space-y-8">
                             <div className="w-20 h-20 bg-indigo-500/20 rounded-full flex items-center justify-center mx-auto ring-4 ring-indigo-500/10 mb-2">
                                 <CheckCircle2 className="w-10 h-10 text-indigo-400" />
                             </div>
-                            
+
                             <div>
                                 <h2 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-200 to-indigo-400 mb-2">Submission Encrypted & Sent</h2>
                                 <p className="text-indigo-200/70 text-lg">{successData.message}</p>
                             </div>
-                            
+
                             <div className="bg-black/60 rounded-2xl p-8 border border-indigo-500/20 shadow-inner">
                                 <p className="text-indigo-300 text-sm font-semibold uppercase tracking-[0.2em] mb-3">Your Secure Reference Code</p>
                                 <div className="text-4xl sm:text-5xl font-mono text-white font-bold tracking-widest bg-gradient-to-r from-indigo-500/20 to-purple-500/20 py-4 rounded-xl border border-indigo-500/30">
                                     {successData.trackingId}
                                 </div>
                             </div>
-                            
+
                             <div className="flex items-start gap-3 text-left bg-rose-500/10 border border-rose-500/20 rounded-xl p-4">
                                 <Lock className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
                                 <p className="text-sm text-rose-200/90 leading-relaxed">
@@ -138,7 +145,7 @@ export default function AnonymousReport() {
                 </div>
             ) : (
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-                    
+
                     {/* Left Column: Info & Trust */}
                     <div className="lg:col-span-4 space-y-6">
                         <div className="bg-slate-800/40 border border-slate-700/50 rounded-3xl p-6 backdrop-blur-sm">
@@ -165,7 +172,7 @@ export default function AnonymousReport() {
                                 </li>
                             </ul>
                         </div>
-                        
+
                         <div className="bg-amber-500/10 border border-amber-500/20 rounded-3xl p-6 backdrop-blur-sm">
                             <h4 className="text-sm font-bold text-amber-500 mb-2">Safety Tip</h4>
                             <p className="text-xs text-amber-200/80 leading-relaxed">
@@ -178,7 +185,7 @@ export default function AnonymousReport() {
                     <div className="lg:col-span-8 bg-slate-900/60 border border-slate-700/80 shadow-2xl rounded-3xl p-8 backdrop-blur-md relative overflow-hidden">
                         {/* Glow effect */}
                         <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/5 blur-[120px] pointer-events-none rounded-full"></div>
-                        
+
                         <form onSubmit={handleSubmit} className="space-y-8 relative z-10">
                             {/* Layout chunk 1: Text details */}
                             <div className="space-y-6">
@@ -230,32 +237,72 @@ export default function AnonymousReport() {
                                     />
                                 </div>
                             </div>
-                            
+
                             <hr className="border-t border-slate-700/50" />
 
                             {/* Layout chunk 2: Image Upload */}
                             <div>
                                 <label className="flex items-center gap-2 text-sm font-bold text-indigo-300 mb-4 uppercase tracking-wider">
-                                    <Camera className="w-4 h-4" /> Photographic Evidence (Optional)
+                                    <Camera className="w-4 h-4" /> Evidence Files (Max 5, Image/Video)
                                 </label>
-                                
+
                                 <div className="mt-2 text-center w-full">
-                                    {imagePreview ? (
-                                        <div className="relative inline-block rounded-2xl overflow-hidden border-2 border-indigo-500/50 outline outline-4 outline-black/20 shadow-xl group">
-                                            <img src={imagePreview} alt="Evidence" className="max-h-64 object-contain align-bottom" />
-                                            <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <button
-                                                    type="button"
-                                                    onClick={clearImage}
-                                                    className="bg-rose-600 text-white rounded-full p-3 hover:bg-rose-500 transform hover:scale-110 transition-all shadow-lg"
-                                                    title="Remove image"
-                                                >
-                                                    <X className="w-6 h-6" />
-                                                </button>
+                                    {imagePreviews.length > 0 ? (
+                                        <div className="space-y-4">
+                                            <div className="flex flex-wrap gap-4 justify-center">
+                                                {imagePreviews.map((url, index) => {
+                                                    const isVideo = images[index]?.type.startsWith("video/");
+                                                    return (
+                                                        <div key={index} className="relative inline-block rounded-2xl overflow-hidden border-2 border-indigo-500/50 outline outline-4 outline-black/20 shadow-xl group w-32 h-32">
+                                                            {isVideo ? (
+                                                                <video src={url} className="w-full h-full object-cover align-bottom" />
+                                                            ) : (
+                                                                <img src={url} alt={`Evidence ${index}`} className="w-full h-full object-cover align-bottom" />
+                                                            )}
+                                                            <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        const newImages = [...images];
+                                                                        newImages.splice(index, 1);
+                                                                        setImages(newImages);
+
+                                                                        const newPreviews = [...imagePreviews];
+                                                                        URL.revokeObjectURL(newPreviews[index]);
+                                                                        newPreviews.splice(index, 1);
+                                                                        setImagePreviews(newPreviews);
+                                                                    }}
+                                                                    className="bg-rose-600 text-white rounded-full p-2 hover:bg-rose-500 transform hover:scale-110 transition-all shadow-lg"
+                                                                    title="Remove item"
+                                                                >
+                                                                    <X className="w-5 h-5" />
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                                {imagePreviews.length < 5 && (
+                                                    <div
+                                                        onClick={() => fileInputRef.current?.click()}
+                                                        className="cursor-pointer flex flex-col items-center justify-center w-32 h-32 border-2 border-slate-700 border-dashed rounded-2xl hover:bg-slate-800/50 hover:border-indigo-500/50 transition-colors group shadow-xl"
+                                                    >
+                                                        <Plus className="w-8 h-8 text-slate-400 group-hover:text-indigo-400 mb-2 transition-colors" />
+                                                        <span className="text-xs font-semibold text-slate-400 group-hover:text-indigo-300">Add More</span>
+                                                    </div>
+                                                )}
                                             </div>
+                                            <button
+                                                type="button"
+                                                onClick={clearImages}
+                                                className="mt-4 bg-rose-600/20 border border-rose-500/50 text-rose-400 rounded-xl px-6 py-2 hover:bg-rose-600 hover:text-white transform transition-all shadow-lg flex items-center justify-center gap-2 mx-auto"
+                                                title="Remove all media"
+                                            >
+                                                <X className="w-4 h-4" /> Clear All
+                                            </button>
                                         </div>
                                     ) : (
-                                        <div 
+                                        <div
                                             onClick={() => fileInputRef.current?.click()}
                                             className="cursor-pointer flex flex-col items-center justify-center w-full h-40 border-2 border-slate-700 border-dashed rounded-2xl hover:bg-slate-800/50 hover:border-indigo-500/50 transition-colors group"
                                         >
@@ -263,19 +310,29 @@ export default function AnonymousReport() {
                                                 <UploadCloud className="w-6 h-6 text-slate-400 group-hover:text-indigo-400" />
                                             </div>
                                             <p className="text-sm text-slate-400 font-medium group-hover:text-indigo-300">
-                                                Click to upload a secure picture
+                                                Click to upload secure evidence (Max 5)
                                             </p>
-                                            <p className="text-xs text-slate-500 mt-1">PNG, JPG up to 10MB</p>
+                                            <p className="text-xs text-slate-500 mt-1">Images/Videos Supported • <span className="text-indigo-400/80">Powered by Cloudinary</span></p>
                                         </div>
                                     )}
-                                    <input 
-                                        type="file" 
-                                        ref={fileInputRef} 
-                                        onChange={handleImageChange} 
-                                        accept="image/png, image/jpeg, image/webp" 
-                                        className="hidden" 
+                                    <input
+                                        type="file"
+                                        ref={fileInputRef}
+                                        onChange={handleImageChange}
+                                        accept="image/*,video/*"
+                                        multiple
+                                        className="hidden"
                                     />
                                 </div>
+                            </div>
+
+                            <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-2xl p-4 flex items-start gap-4 mx-2">
+                                <div className="p-2 bg-indigo-500/20 rounded-xl">
+                                    <UploadCloud className="w-5 h-5 text-indigo-400" />
+                                </div>
+                                <p className="text-sm text-slate-400 leading-relaxed">
+                                    <span className="text-indigo-400 font-bold">Cloud Security:</span> Your evidence is handled via Cloudinary's secure upload stream, ensuring no local traces are left on the server.
+                                </p>
                             </div>
 
                             {error && (

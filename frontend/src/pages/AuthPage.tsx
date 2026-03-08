@@ -5,7 +5,7 @@ import { Navigate, useNavigate } from "react-router-dom";
 
 type AuthMode = "login" | "register";
 
-const API_BASE = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:5000/api`;
+const API_BASE = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:5001/api`;
 
 export default function AuthPage() {
     const { user, setUser } = useAuth();

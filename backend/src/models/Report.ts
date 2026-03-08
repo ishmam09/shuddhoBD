@@ -24,10 +24,9 @@ const ReportSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    image: {
-        type: String,
-        default: null
-    },
+    images: [{
+        type: String
+    }],
     location: {
         type: String,
         required: true

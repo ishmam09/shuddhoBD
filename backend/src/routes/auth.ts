@@ -2,12 +2,10 @@ import { Router, Response } from "express";
 import jwt from "jsonwebtoken";
 import { User } from "../models/User";
 import { OTP } from "../models/OTP";
-import { sendOTPVerificationEmail } from "../utils/mailer";
+import { sendOTPVerificationEmail, sendProfileUpdateOTPEmail } from "../utils/mailer";
 import { ENV } from "../config/env";
 import { AuthRequest, authMiddleware } from "../middleware/auth";
-import { upload } from "../utils/upload";
-import fs from "fs";
-import path from "path";
+import { uploadProfile } from "../utils/cloudinary";
 
 const router = Router();
 
@@ -110,6 +108,11 @@ router.post("/register", async (req: AuthRequest, res: Response) => {
         name: user.name,
         email: user.email,
         role: user.role,
+        phone: user.phone,
+        nid: user.nid,
+        address: user.address,
+        gender: user.gender,
+        profileImage: user.profileImage,
       },
     });
   } catch (error: any) {
@@ -158,6 +161,11 @@ router.post("/login", async (req: AuthRequest, res: Response) => {
         name: user.name,
         email: user.email,
         role: user.role,
+        phone: user.phone,
+        nid: user.nid,
+        address: user.address,
+        gender: user.gender,
+        profileImage: user.profileImage,
       },
     });
   } catch (error) {
@@ -186,15 +194,34 @@ router.get("/me", authMiddleware, (req: AuthRequest, res: Response) => {
 
 router.patch("/profile", authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
-    const { email, phone, address } = req.body;
+    const { email, phone, address, otp } = req.body;
     const userId = req.user?._id;
+    const userEmail = req.user?.email;
 
-    if (!userId) {
+    if (!userId || !userEmail) {
       return res.status(401).json({ message: "Not authenticated" });
     }
 
-    // Strictly enforce editable fields: email, phone, address
-    // name, gender, nid are read-only as per user request
+    // Step 1: If no OTP is provided, send one
+    if (!otp) {
+      const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
+      await OTP.deleteMany({ email: userEmail });
+      await OTP.create({ email: userEmail, otp: generatedOtp });
+      await sendProfileUpdateOTPEmail(userEmail, generatedOtp);
+
+      return res.status(202).json({
+        requiresOtp: true,
+        message: "A verification code has been sent to your email to confirm these changes."
+      });
+    }
+
+    // Step 2: If OTP is provided, verify it
+    const otpRecord = await OTP.findOne({ email: userEmail, otp });
+    if (!otpRecord) {
+      return res.status(400).json({ message: "Invalid or expired verification code" });
+    }
+
+    // Strictly enforce editable fields
     const updateData: any = {};
     if (email) updateData.email = email;
     if (phone) updateData.phone = phone;
@@ -209,6 +236,9 @@ router.patch("/profile", authMiddleware, async (req: AuthRequest, res: Response)
     if (!updatedUser) {
       return res.status(404).json({ message: "User not found" });
     }
+
+    // Clean up OTP after successful update
+    await OTP.deleteMany({ email: userEmail });
 
     return res.json({
       message: "Profile updated successfully",
@@ -234,38 +264,36 @@ router.patch("/profile", authMiddleware, async (req: AuthRequest, res: Response)
   }
 });
 
-router.post("/profile-image", authMiddleware, upload.single("image"), async (req: AuthRequest, res: Response) => {
+
+router.post("/profile-image", authMiddleware, uploadProfile.single("image"), async (req: AuthRequest, res: Response) => {
   try {
     if (!req.file) {
       return res.status(400).json({ message: "No image uploaded" });
     }
 
     const userId = req.user?._id;
-    const imageUrl = `/uploads/${req.file.filename}`;
+    // Cloudinary storage puts the secure URL in req.file.path
+    const imageUrl = req.file.path;
 
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Delete old image if it exists
-    if (user.profileImage) {
-      const oldPath = path.join(process.cwd(), user.profileImage);
-      if (fs.existsSync(oldPath)) {
-        fs.unlinkSync(oldPath);
-      }
-    }
+    // Optional: Delete old image from Cloudinary if it exists
+    // (We'd need to extract public_id to do this properly, 
+    // for now we just update the URL as per simple requirements)
 
     user.profileImage = imageUrl;
     await user.save();
 
     return res.json({
-      message: "Profile image updated",
+      message: "Profile image updated successfully via Cloudinary",
       profileImage: imageUrl
     });
   } catch (error) {
     console.error("Upload Error:", error);
-    return res.status(500).json({ message: "Failed to upload image" });
+    return res.status(500).json({ message: "Failed to upload image to cloud storage" });
   }
 });
 

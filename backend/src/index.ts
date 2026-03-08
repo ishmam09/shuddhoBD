@@ -9,7 +9,8 @@ import { authMiddleware, requireRoles, AuthRequest } from "./middleware/auth";
 const app = express();
 
 const allowedOrigins = [
-  ENV.clientUrl || "http://localhost:5173",
+  ENV.clientUrl || "http://127.0.0.1:5173",
+  "http://localhost:5173",
   "http://127.0.0.1:5173",
 ];
 
@@ -17,8 +18,8 @@ const corsOptions: cors.CorsOptions = {
   origin: (origin, callback) => {
     // Allow localhost, 127.0.0.1, or any local network IP
     if (
-      !origin || 
-      allowedOrigins.includes(origin) || 
+      !origin ||
+      allowedOrigins.includes(origin) ||
       origin.startsWith("http://192.168.") ||
       origin.startsWith("http://10.")
     ) {
@@ -35,6 +36,11 @@ const corsOptions: cors.CorsOptions = {
 };
 
 app.use(cors(corsOptions));
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url} - Type: ${req.headers['content-type']}`);
+  next();
+});
+
 app.use(express.json());
 app.use(cookieParser());
 app.use("/uploads", express.static("uploads"));
@@ -58,6 +64,15 @@ app.get("/api/protected/analyst", authMiddleware, requireRoles("analyst", "admin
 
 app.get("/api/protected/admin", authMiddleware, requireRoles("admin"), (req: AuthRequest, res) => {
   res.json({ message: "Admin-level access granted", user: req.user });
+});
+
+// Global Error Handler
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error('[GLOBAL ERROR HANDLER]', err);
+  res.status(err.status || 500).json({
+    message: err.message || 'Internal Server Error',
+    error: process.env.NODE_ENV === 'development' ? err : {}
+  });
 });
 
 const start = async () => {

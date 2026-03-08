@@ -1,22 +1,29 @@
 import { Navigate, Outlet, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
-const API_BASE = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:5000/api`;
+const API_BASE = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:5001/api`;
 
 const NavItem = ({ label, href, active }: any) => (
     <Link
         to={href}
-        className={`px-1 py-2 text-sm font-medium transition-colors ${
-            active ? 'text-white border-b-2 border-shuddho-neon' : 'text-slate-400 hover:text-slate-200'
-        }`}
+        className={`px-1 py-2 text-sm font-medium transition-colors ${active ? 'text-white border-b-2 border-shuddho-neon' : 'text-slate-400 hover:text-slate-200'
+            }`}
     >
         {label}
     </Link>
 );
 
 export default function DashboardLayout() {
-    const { user, logout } = useAuth();
+    const { user, loading, logout } = useAuth();
     const location = useLocation();
+
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-shuddho-bg flex items-center justify-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-shuddho-neon"></div>
+            </div>
+        );
+    }
 
     if (!user) {
         return <Navigate to="/" replace />;
@@ -73,13 +80,17 @@ export default function DashboardLayout() {
                     {/* User Profile Avatar / Dropdown trigger */}
                     <Link to="/dashboard/profile" className="w-10 h-10 rounded-full bg-slate-700 border-2 border-transparent hover:border-shuddho-neon transition-colors overflow-hidden flex items-center justify-center relative group">
                         {user.profileImage ? (
-                            <img src={`${import.meta.env.VITE_SERVER_URL || "http://localhost:5000"}${user.profileImage}`} alt={user.name} className="w-full h-full object-cover" />
+                            <img
+                                src={user.profileImage.startsWith('http') ? user.profileImage : `${import.meta.env.VITE_SERVER_URL || "http://localhost:5001"}${user.profileImage}`}
+                                alt={user.name}
+                                className="w-full h-full object-cover"
+                            />
                         ) : (
                             <span className="text-white font-medium">{user.name?.charAt(0).toUpperCase() || 'U'}</span>
                         )}
                         {/* Simple tooltip logout */}
                         <div className="absolute right-0 top-12 mt-2 w-32 bg-shuddho-card border border-shuddho-border rounded-lg shadow-xl py-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto">
-                           <button onClick={(e) => { e.preventDefault(); handleLogout(); }} className="w-full text-left px-4 py-2 text-sm text-rose-400 hover:bg-slate-800">Logout</button>
+                            <button onClick={(e) => { e.preventDefault(); handleLogout(); }} className="w-full text-left px-4 py-2 text-sm text-rose-400 hover:bg-slate-800">Logout</button>
                         </div>
                     </Link>
                 </div>
