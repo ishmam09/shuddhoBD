@@ -69,11 +69,11 @@ body {
 
   /* SeatCard Classes */
   .card-container {
-    @apply bg-slate-800/80 rounded-3xl p-6 border border-slate-700/50 hover:border-indigo-500/40 hover:shadow-[0_8px_30px_rgb(99, 102, 241, 0.15)] transition-all duration-300 group relative backdrop-blur-xl shrink-0 h-auto;
+    @apply bg-slate-800/80 rounded-3xl p-6 border border-slate-700/50 hover:border-indigo-500/40 hover:shadow-[0_8px_30px_rgba(99,102,241,0.15)] transition-all duration-300 relative backdrop-blur-xl shrink-0 h-auto;
   }
 
   .card-edit-btn {
-    @apply absolute top-5 right-5 p-2 bg-slate-700/30 hover:bg-indigo-500 text-slate-300 hover:text-white rounded-xl transition-all opacity-0 group-hover:opacity-100 cursor-pointer shadow-lg z-20;
+    @apply absolute top-5 right-5 p-2 bg-slate-700/30 hover:bg-indigo-500 text-slate-300 hover:text-white rounded-xl transition-all opacity-0 cursor-pointer shadow-lg z-20;
   }
 
   .card-header-wrapper {
@@ -146,11 +146,11 @@ body {
 
   /* AdminSeatModal Classes */
   .modal-overlay {
-    @apply fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200;
+    @apply fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm duration-200;
   }
 
   .modal-container {
-    @apply w-full max-w-lg bg-slate-900 border border-slate-700 shadow-2xl rounded-3xl overflow-hidden animate-in zoom-in-95 duration-200;
+    @apply w-full max-w-lg bg-slate-900 border border-slate-700 shadow-2xl rounded-3xl overflow-hidden duration-200;
   }
 
   .modal-header {
