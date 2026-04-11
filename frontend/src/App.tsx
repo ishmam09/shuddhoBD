@@ -7,6 +7,7 @@ import Reports from "./pages/Reports";
 import Profile from "./pages/Profile";
 import News from "./pages/News";
 import AnonymousReport from "./pages/AnonymousReport";
+import AssetData from "./pages/AssetData";
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
           <Route path="/dashboard" element={<DashboardLayout />}>
             <Route index element={<Dashboard />} />
             <Route path="reports" element={<Reports />} />
+            <Route path="assets" element={<AssetData />} />
             <Route path="anonymous-report" element={<AnonymousReport />} />
             <Route path="news" element={<News />} />
             <Route path="profile" element={<Profile />} />
