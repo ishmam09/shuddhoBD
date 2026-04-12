@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { MapPin, Plus, X, UploadCloud, ShieldCheck, Check, Ban, Edit2, Trash2, FileText } from 'lucide-react';
+import React from 'react';
+import { useLoadScript, GoogleMap, Marker } from "@react-google-maps/api";
 import { useAuth } from '../context/AuthContext';
 
 const API_BASE = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:5001/api`;
@@ -25,6 +27,11 @@ export default function Reports() {
 
     // Detailed View State
     const [selectedReport, setSelectedReport] = useState<any>(null);
+
+    const { isLoaded } = useLoadScript({
+        googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "",
+    });
+    const mapCenter = React.useMemo(() => ({ lat: 23.6850, lng: 90.3563 }), []);
 
     const fetchReports = async () => {
         setLoading(true);
@@ -354,10 +361,28 @@ export default function Reports() {
                                         <div className="space-y-4">
                                             <div>
                                                 <div className="text-[10px] text-slate-500 uppercase font-bold tracking-widest mb-1">Location</div>
-                                                <div className="flex items-start gap-2 text-sm text-white">
+                                                <div className="flex items-start gap-2 text-sm text-white mb-2">
                                                     <MapPin className="w-4 h-4 text-shuddho-red shrink-0 mt-0.5" />
                                                     <span>{selectedReport.location}</span>
                                                 </div>
+                                                {isLoaded && import.meta.env.VITE_GOOGLE_MAPS_API_KEY && selectedReport.location.match(/^-?\d+(\.\d+)?,\s*-?\d+(\.\d+)?$/) && (
+                                                    <div className="w-full h-32 rounded-xl overflow-hidden border border-slate-700 mt-2">
+                                                        <GoogleMap
+                                                            zoom={14}
+                                                            center={{ lat: parseFloat(selectedReport.location.split(',')[0]), lng: parseFloat(selectedReport.location.split(',')[1]) }}
+                                                            mapContainerStyle={{ width: "100%", height: "100%" }}
+                                                            options={{
+                                                                disableDefaultUI: true,
+                                                                mapTypeControl: false,
+                                                                streetViewControl: false,
+                                                                restriction: { latLngBounds: { north: 26.6345, south: 20.7384, west: 88.0086, east: 92.6737 }, strictBounds: false },
+                                                                minZoom: 6
+                                                            }}
+                                                        >
+                                                            <Marker position={{ lat: parseFloat(selectedReport.location.split(',')[0]), lng: parseFloat(selectedReport.location.split(',')[1]) }} />
+                                                        </GoogleMap>
+                                                    </div>
+                                                )}
                                             </div>
 
                                             <div className="w-full h-px bg-shuddho-border"></div>
@@ -581,9 +606,36 @@ export default function Reports() {
                                         type="text"
                                         value={newReport.location}
                                         onChange={e => setNewReport({ ...newReport, location: e.target.value })}
-                                        className="w-full bg-shuddho-card border border-shuddho-border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-shuddho-neon"
-                                        placeholder="e.g. Mirpur 1"
+                                        className="w-full bg-shuddho-card border border-shuddho-border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-shuddho-neon mb-3"
+                                        placeholder="e.g. Mirpur 1 (or tap map below)"
                                     />
+                                    {isLoaded && import.meta.env.VITE_GOOGLE_MAPS_API_KEY && (
+                                        <div className="w-full h-40 rounded-lg overflow-hidden border border-shuddho-border">
+                                            <GoogleMap
+                                                zoom={6}
+                                                center={mapCenter}
+                                                mapContainerStyle={{ width: "100%", height: "100%" }}
+                                                onClick={(e) => {
+                                                    const lat = e.latLng?.lat();
+                                                    const lng = e.latLng?.lng();
+                                                    if (lat && lng) setNewReport({ ...newReport, location: `${lat.toFixed(5)}, ${lng.toFixed(5)}` });
+                                                }}
+                                                options={{
+                                                    streetViewControl: false,
+                                                    mapTypeControl: false,
+                                                    restriction: {
+                                                        latLngBounds: { north: 26.6345, south: 20.7384, west: 88.0086, east: 92.6737 },
+                                                        strictBounds: false,
+                                                    },
+                                                    minZoom: 6
+                                                }}
+                                            >
+                                                {newReport.location.match(/^-?\d+(\.\d+)?,\s*-?\d+(\.\d+)?$/) && (
+                                                    <Marker position={{ lat: parseFloat(newReport.location.split(',')[0]), lng: parseFloat(newReport.location.split(',')[1]) }} />
+                                                )}
+                                            </GoogleMap>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Media Upload UI */}

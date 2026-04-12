@@ -10,6 +10,7 @@ import AnonymousReport from "./pages/AnonymousReport";
 import AssetData from "./pages/AssetData";
 import Constituency from "./pages/Constituency";
 import RepresentativeProfile from "./pages/RepresentativeProfile";
+import MapPage from "./pages/MapPage";
 
 function App() {
   return (
@@ -26,6 +27,7 @@ function App() {
             <Route path="profile" element={<Profile />} />
             <Route path="constituency" element={<Constituency />} />
             <Route path="constituency/:seatId" element={<RepresentativeProfile />} />
+            <Route path="map" element={<MapPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

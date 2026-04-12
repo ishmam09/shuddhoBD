@@ -1,6 +1,7 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import type { FormEvent, ChangeEvent } from "react";
 import { Shield, MapPin, FileText, Camera, UploadCloud, X, Lock, CheckCircle2, Plus } from "lucide-react";
+import { useLoadScript, GoogleMap, Marker } from "@react-google-maps/api";
 
 const API_BASE = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:5001/api`;
 
@@ -15,6 +16,11 @@ export default function AnonymousReport() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [successData, setSuccessData] = useState<{ trackingId: string; message: string } | null>(null);
+
+    const { isLoaded } = useLoadScript({
+        googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "",
+    });
+    const mapCenter = useMemo(() => ({ lat: 23.6850, lng: 90.3563 }), []);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -216,9 +222,36 @@ export default function AnonymousReport() {
                                         required
                                         value={form.location}
                                         onChange={handleChange}
-                                        className="w-full rounded-2xl border-2 border-slate-700/50 bg-black/40 px-5 py-4 text-white placeholder:text-slate-600 focus:border-indigo-500 focus:bg-slate-800/80 focus:outline-none transition-all"
-                                        placeholder="e.g. Intersection of Road 12 & Main Avenue, Dhaka"
+                                        className="w-full rounded-2xl border-2 border-slate-700/50 bg-black/40 px-5 py-4 text-white placeholder:text-slate-600 focus:border-indigo-500 focus:bg-slate-800/80 focus:outline-none transition-all mb-3"
+                                        placeholder="e.g. Intersection of Road 12 & Main Avenue, Dhaka (or click map)"
                                     />
+                                    {isLoaded && import.meta.env.VITE_GOOGLE_MAPS_API_KEY && (
+                                        <div className="w-full h-48 rounded-2xl overflow-hidden border-2 border-slate-700/50 relative">
+                                            <GoogleMap
+                                                zoom={6}
+                                                center={mapCenter}
+                                                mapContainerStyle={{ width: "100%", height: "100%" }}
+                                                onClick={(e) => {
+                                                    const lat = e.latLng?.lat();
+                                                    const lng = e.latLng?.lng();
+                                                    if (lat && lng) setForm({ ...form, location: `${lat.toFixed(5)}, ${lng.toFixed(5)}` });
+                                                }}
+                                                options={{
+                                                    streetViewControl: false,
+                                                    mapTypeControl: false,
+                                                    restriction: {
+                                                        latLngBounds: { north: 26.6345, south: 20.7384, west: 88.0086, east: 92.6737 },
+                                                        strictBounds: false,
+                                                    },
+                                                    minZoom: 6
+                                                }}
+                                            >
+                                                {form.location.match(/^-?\d+(\.\d+)?,\s*-?\d+(\.\d+)?$/) && (
+                                                    <Marker position={{ lat: parseFloat(form.location.split(',')[0]), lng: parseFloat(form.location.split(',')[1]) }} />
+                                                )}
+                                            </GoogleMap>
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div>

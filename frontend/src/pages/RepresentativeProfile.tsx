@@ -1,14 +1,44 @@
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, User, MapPin, Target, Landmark, PieChart } from 'lucide-react';
+import { ArrowLeft, MapPin, Target, Landmark, PieChart } from 'lucide-react';
 import { constituenciesData } from '../data/constituencies';
 
 export default function RepresentativeProfile() {
     const { seatId } = useParams();
     const navigate = useNavigate();
 
+    const [dbSeat, setDbSeat] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchSeat = async () => {
+            try {
+                const API_BASE = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:5001/api`;
+                const res = await fetch(`${API_BASE}/seats`, { credentials: "include" });
+                const data = await res.json();
+                const matched = data.find((s: any) => s.order === Number(seatId));
+                setDbSeat(matched);
+            } catch (err) {
+                console.error(err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchSeat();
+    }, [seatId]);
+
     const seat = constituenciesData.find(s => s.seatId === Number(seatId));
 
-    if (!seat) {
+    if (loading) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[500px] text-white">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-shuddho-neon mb-4"></div>
+                <p className="text-slate-400">Loading representative database profiles...</p>
+            </div>
+        );
+    }
+
+    if (!seat || !dbSeat) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[500px] text-white space-y-4">
                 <h1 className="text-2xl font-bold">Constituency Not Found</h1>
@@ -94,36 +124,35 @@ export default function RepresentativeProfile() {
                                     style={{ borderColor: rep.party.color }}
                                 >
                                     <img
-                                        src={rep.photo}
-                                        alt={rep.name}
+                                        src={dbSeat?.candidateImage || rep.photo}
+                                        alt={dbSeat?.mpName || rep.name}
                                         className="w-24 h-24 rounded-full object-cover"
                                     />
                                 </div>
                             </div>
 
                             {/* Info */}
-                            <h2 className="text-xl font-bold text-white mb-1">{rep.name}</h2>
-                            <div className="flex items-center justify-center gap-2 text-emerald-400 text-sm mb-4">
-                                <span className="font-semibold">{experience} Years of Experience</span>
-                            </div>
+                            <h2 className="text-xl font-bold text-white mb-6">{dbSeat?.mpName || rep.name}</h2>
 
-                            <div className="w-full bg-slate-800/40 p-4 rounded-2xl border border-slate-700/50 mb-6 relative overflow-hidden group">
+                            <div className="w-full bg-slate-800/40 p-4 rounded-2xl border border-slate-700/50 mb-0 relative overflow-hidden group">
                                 <div
                                     className="absolute inset-0 opacity-10 transition-opacity group-hover:opacity-20"
                                     style={{ backgroundColor: rep.party.color }}
                                 />
-                                <div className="text-4xl mb-2 drop-shadow-md">{rep.party.symbol}</div>
+                                {dbSeat?.partyLogo ? (
+                                    <div className="w-12 h-12 mx-auto mb-2 drop-shadow-md rounded-full bg-white/10 p-1 flex items-center justify-center">
+                                        <img src={dbSeat.partyLogo} alt={dbSeat.party} className="w-full h-full object-contain" />
+                                    </div>
+                                ) : (
+                                    <div className="text-4xl mb-2 drop-shadow-md">{rep.party.symbol}</div>
+                                )}
                                 <p className="text-xs text-slate-400 mb-1">Political Affiliation</p>
                                 <p className="font-bold text-white">
-                                    {rep.party.name}
+                                    {dbSeat?.party || rep.party.name}
                                 </p>
                             </div>
 
-                            <div className="w-full flex gap-3">
-                                <button className="flex-1 py-2.5 bg-shuddho-neon/10 text-shuddho-neon hover:bg-shuddho-neon/20 border border-shuddho-neon/30 rounded-xl flex items-center justify-center gap-2 transition-colors text-sm font-semibold">
-                                    <User className="w-4 h-4" /> Full Profile
-                                </button>
-                            </div>
+                            {/* Full Profile Bar removed to keep tile neat and purely overview focused as requested */}
                         </div>
                     </div>
                 </div>

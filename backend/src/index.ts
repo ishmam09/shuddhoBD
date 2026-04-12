@@ -2,6 +2,11 @@ import express from "express";
 import cors from "cors";
 import mongoose from "mongoose";
 import cookieParser from "cookie-parser";
+import dns from "dns";
+
+// Force Google/Cloudflare DNS to bypass local ISP SRV resolution bugs on Windows
+try { dns.setServers(["8.8.8.8", "1.1.1.1"]); } catch (e) { console.warn("Could not set DNS servers"); }
+
 import authRoutes from "./routes/auth";
 import { ENV } from "./config/env";
 import { authMiddleware, requireRoles, AuthRequest } from "./middleware/auth";
@@ -83,7 +88,7 @@ const start = async () => {
     if (!ENV.mongoUri) {
       throw new Error("MONGO_URI is not set");
     }
-    await mongoose.connect(ENV.mongoUri);
+    await mongoose.connect(ENV.mongoUri, { family: 4 });
     console.log("Connected to MongoDB");
 
     app.listen(ENV.port, () => {
