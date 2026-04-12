@@ -8,6 +8,8 @@ import Profile from "./pages/Profile";
 import News from "./pages/News";
 import AnonymousReport from "./pages/AnonymousReport";
 import AssetData from "./pages/AssetData";
+import Constituency from "./pages/Constituency";
+import RepresentativeProfile from "./pages/RepresentativeProfile";
 
 function App() {
   return (
@@ -22,6 +24,8 @@ function App() {
             <Route path="anonymous-report" element={<AnonymousReport />} />
             <Route path="news" element={<News />} />
             <Route path="profile" element={<Profile />} />
+            <Route path="constituency" element={<Constituency />} />
+            <Route path="constituency/:seatId" element={<RepresentativeProfile />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

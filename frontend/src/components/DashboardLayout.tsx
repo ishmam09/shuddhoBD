@@ -66,6 +66,7 @@ export default function DashboardLayout() {
                     <NavItem label="Asset Data" href="/dashboard/assets" active={location.pathname === '/dashboard/assets'} />
                     <NavItem label="Anonymous Report" href="/dashboard/anonymous-report" active={location.pathname === '/dashboard/anonymous-report'} />
                     <NavItem label="Map" href="/dashboard/map" active={location.pathname === '/dashboard/map'} />
+                    <NavItem label="Constituency" href="/dashboard/constituency" active={location.pathname === '/dashboard/constituency'} />
                     <NavItem label="News" href="/dashboard/news" active={location.pathname === '/dashboard/news'} />
                 </nav>
 
