@@ -62,6 +62,7 @@ export default function DashboardLayout() {
 
                 <nav className="flex items-center justify-center gap-8">
                     <NavItem label="Dashboard" href="/dashboard" active={location.pathname === '/dashboard'} />
+                    <NavItem label="Project Status" href="/dashboard/project-status" active={location.pathname === '/dashboard/project-status'} />
                     <NavItem label="Reports" href="/dashboard/reports" active={location.pathname === '/dashboard/reports'} />
                     <NavItem label="Asset Data" href="/dashboard/assets" active={location.pathname === '/dashboard/assets'} />
                     <NavItem label="Anonymous Report" href="/dashboard/anonymous-report" active={location.pathname === '/dashboard/anonymous-report'} />

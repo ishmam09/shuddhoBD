@@ -11,6 +11,7 @@ import AssetData from "./pages/AssetData";
 import Constituency from "./pages/Constituency";
 import RepresentativeProfile from "./pages/RepresentativeProfile";
 import MapPage from "./pages/MapPage";
+import ProjectStatus from "./pages/ProjectStatus";
 
 function App() {
   return (
@@ -28,6 +29,7 @@ function App() {
             <Route path="constituency" element={<Constituency />} />
             <Route path="constituency/:seatId" element={<RepresentativeProfile />} />
             <Route path="map" element={<MapPage />} />
+            <Route path="project-status" element={<ProjectStatus />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
