@@ -16,5 +16,6 @@ export const ENV = {
   cloudinaryApiKey: process.env.CLOUDINARY_API_KEY || "",
   cloudinaryApiSecret: process.env.CLOUDINARY_API_SECRET || "",
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || "7d",
+  newsApiKey: process.env.NEWS_API_KEY || "",
 };
 

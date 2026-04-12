@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Postman - ShuddhoBD API</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Source+Code+Pro:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --pm-bg: #FFFFFF;
+            --pm-sidebar: #F9F9F9;
+            --pm-border: #EDEDED;
+            --pm-text: #212121;
+            --pm-text-secondary: #6B6B6B;
+            --pm-orange: #FF6C37;
+            --pm-blue: #097BED;
+            --pm-green: #0CBB52;
+            --pm-yellow: #E5A500;
+            --pm-header-bg: #FFFFFF;
+            --pm-tab-active: #F2F2F2;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Inter', sans-serif; background: var(--pm-bg); color: var(--pm-text); overflow: hidden; height: 100vh; display: flex; flex-direction: column; }
+
+        /* Top Nav */
+        .top-nav { height: 40px; border-bottom: 1px solid var(--pm-border); display: flex; align-items: center; padding: 0 12px; font-size: 12px; font-weight: 500; gap: 20px; }
+        .top-nav .active { color: var(--pm-orange); border-bottom: 2px solid var(--pm-orange); height: 100%; display: flex; align-items: center; }
+
+        /* Main Container */
+        .main-container { display: flex; flex: 1; overflow: hidden; }
+
+        /* Sidebar */
+        .sidebar { width: 260px; background: var(--pm-sidebar); border-right: 1px solid var(--pm-border); display: flex; flex-direction: column; }
+        .side-header { padding: 12px; border-bottom: 1px solid var(--pm-border); font-size: 13px; font-weight: 600; }
+        .side-content { padding: 8px; font-size: 13px; }
+        .coll-item { display: flex; align-items: center; padding: 6px 8px; border-radius: 4px; cursor: pointer; gap: 8px; }
+        .coll-item:hover { background: #E0E0E0; }
+        .coll-item.selected { background: #E0E0E0; }
+        .coll-item .folder { color: #888; font-size: 14px; }
+
+        /* Content Area */
+        .content-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+        
+        /* Tab Bar */
+        .tab-bar { height: 36px; border-bottom: 1px solid var(--pm-border); display: flex; align-items: center; padding-left: 8px; }
+        .tab { height: 100%; padding: 0 16px; border-right: 1px solid var(--pm-border); display: flex; align-items: center; font-size: 12px; gap: 8px; background: var(--pm-bg); cursor: pointer; }
+        .tab.active { background: var(--pm-tab-active); color: var(--pm-text); border-top: 2px solid var(--pm-orange); }
+        .tab .method { font-weight: 700; font-size: 10px; }
+        .tab .GET { color: var(--pm-green); }
+        .tab .POST { color: var(--pm-yellow); }
+
+        /* Request Header (URL Bar) */
+        .request-header { padding: 16px; border-bottom: 1px solid var(--pm-border); display: flex; align-items: center; gap: 8px; }
+        .method-select { height: 36px; border: 1px solid var(--pm-border); padding: 0 12px; font-weight: 700; font-size: 13px; border-radius: 4px; display: flex; align-items: center; background: #F2F2F2; }
+        .url-input { flex: 1; height: 36px; border: 1px solid var(--pm-border); padding: 0 12px; font-size: 14px; border-radius: 4px; background: #F9F9F9; outline: none; }
+        .btn-send { height: 36px; background: var(--pm-blue); color: white; padding: 0 20px; border-radius: 4px; border: none; font-weight: 600; font-size: 13px; cursor: pointer; }
+        .btn-send:hover { background: #0866C6; }
+
+        /* Request Tabs */
+        .req-tabs { height: 36px; border-bottom: 1px solid var(--pm-border); display: flex; align-items: center; padding: 0 16px; font-size: 12px; gap: 20px; color: var(--pm-text-secondary); }
+        .req-tabs .active { color: var(--pm-text); border-bottom: 2px solid var(--pm-orange); height: 100%; display: flex; align-items: center; }
+
+        /* Response Header */
+        .res-header { height: 40px; border-bottom: 1px solid var(--pm-border); display: flex; align-items: center; padding: 0 16px; justify-content: space-between; font-size: 12px; background: #F9F9F9; }
+        .res-stats { display: flex; gap: 16px; font-weight: 500; }
+        .status-ok { color: var(--pm-green); font-weight: 700; }
+
+        /* Response Body */
+        .res-body { flex: 1; overflow: auto; background: #FFFFFF; font-family: 'Source Code Pro', monospace; font-size: 13px; padding: 12px; white-space: pre-wrap; position: relative; }
+        .line-numbers { color: #BBB; padding-right: 12px; border-right: 1px solid #EEE; margin-right: 12px; text-align: right; user-select: none; }
+
+        /* JSON Highlighting */
+        .json-key { color: #A626A1; }
+        .json-string { color: #50A14F; }
+        .json-number { color: #986801; }
+        .json-boolean { color: #4078F2; }
+
+        /* Footer */
+        .footer { height: 28px; border-top: 1px solid var(--pm-border); display: flex; align-items: center; padding: 0 12px; font-size: 11px; color: #888; background: #F2F2F2; }
+    </style>
+</head>
+<body>
+    <div class="top-nav">
+        <div class="active">My Workspace</div>
+        <div>Collections</div>
+        <div>APIs</div>
+        <div>Environments</div>
+    </div>
+
+    <div class="main-container">
+        <div class="sidebar">
+            <div class="side-header">Collections</div>
+            <div class="side-content">
+                <div class="coll-item">
+                    <span class="folder">📁</span>
+                    <span>ShuddhoBD Backend</span>
+                </div>
+                <div style="padding-left: 24px;">
+                    <div class="coll-item item-1" onclick="loadAPI(1)">
+                        <span class="GET" style="font-size: 9px; font-weight: 800; width: 24px;">GET</span>
+                        <span style="font-size: 12px;">Get Reports</span>
+                    </div>
+                    <div class="coll-item item-2" onclick="loadAPI(2)">
+                        <span class="POST" style="font-size: 9px; font-weight: 800; width: 24px; color: #E5A500;">POST</span>
+                        <span style="font-size: 12px;">Submit Report</span>
+                    </div>
+                    <div class="coll-item item-3" onclick="loadAPI(3)">
+                        <span class="GET" style="font-size: 9px; font-weight: 800; width: 24px;">GET</span>
+                        <span style="font-size: 12px;">Get News Feed</span>
+                    </div>
+                    <div class="coll-item item-4" onclick="loadAPI(4)">
+                        <span class="GET" style="font-size: 9px; font-weight: 800; width: 24px;">GET</span>
+                        <span style="font-size: 12px;">Sentiment Stats</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-area">
+            <div class="tab-bar">
+                <div class="tab active" id="tab-title">
+                    <span class="method GET" id="tab-method">GET</span>
+                    <span id="tab-text">Get Reports</span>
+                </div>
+                <div class="tab">+</div>
+            </div>
+
+            <div class="request-header">
+                <div class="method-select" id="req-method-display">GET</div>
+                <input type="text" class="url-input" id="url-field" value="http://localhost:1302/api/reports">
+                <button class="btn-send">Send</button>
+            </div>
+
+            <div class="req-tabs">
+                <div class="active" id="params-tab-link">Params</div>
+                <div id="body-tab-link">Body</div>
+                <div>Headers</div>
+                <div>Authorization</div>
+            </div>
+
+            <div id="req-body-preview" style="display:none; padding: 12px; border-bottom: 1px solid #EDEDED; background: #FDFDFD; font-family: monospace; font-size: 12px;">
+                <pre id="post-body-content" style="color: #444;"></pre>
+            </div>
+
+            <div class="res-header">
+                <div style="font-weight: 600;">Response</div>
+                <div class="res-stats">
+                    <span>Status: <span class="status-ok" id="res-status">200 OK</span></span>
+                    <span>Time: <span style="color: var(--pm-green);" id="res-time">42 ms</span></span>
+                    <span>Size: <span style="color: var(--pm-green);" id="res-size">1.24 KB</span></span>
+                </div>
+            </div>
+
+            <div class="res-body" id="json-output"></div>
+
+            <div class="footer">
+                <span>ShuddhoBD Live Env • Port 1302</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const apis = {
+            1: {
+                method: "GET",
+                name: "Get Reports",
+                url: "http://localhost:1302/api/reports",
+                status: "200 OK",
+                time: "42 ms",
+                size: "1.24 KB",
+                body: null,
+                response: [
+                    {
+                        "_id": "69ad36d95f6e024975f64431",
+                        "author": { "_id": "69ad30012385d554680c82b7", "name": "System Admin", "role": "admin" },
+                        "title": "Bribe taken by contractor for road construction project",
+                        "description": "A local official took a massive bribe of cash from the infrastructure contractor. The road was never built and the money is missing.",
+                        "location": "Gulshan",
+                        "category": "Infrastructure Delay",
+                        "severity": "High",
+                        "severityScore": 100,
+                        "status": "Pending",
+                        "createdAt": "2026-03-08T08:44:09.036Z",
+                        "__v": 0
+                    }
+                ]
+            },
+            2: {
+                method: "POST",
+                name: "Submit Report",
+                url: "http://localhost:1302/api/reports",
+                status: "201 Created",
+                time: "156 ms",
+                size: "450 B",
+                body: {
+                    title: "Bribe taken by contractor",
+                    description: "A local official took a massive bribe of cash from the infrastructure contractor...",
+                    location: "Gulshan",
+                    category: "Infrastructure Delay"
+                },
+                response: {
+                    "success": true,
+                    "message": "Report submitted and classified successfully",
+                    "report": {
+                        "title": "Bribe taken by contractor",
+                        "category": "Infrastructure Delay",
+                        "severity": "High",
+                        "status": "Pending",
+                        "createdAt": "2026-03-15T01:30:00.000Z"
+                    }
+                }
+            },
+            3: {
+                method: "GET",
+                name: "Get News Feed",
+                url: "http://localhost:1302/api/news",
+                status: "200 OK",
+                time: "84 ms",
+                size: "3.2 KB",
+                body: null,
+                response: {
+                    "status": "ok",
+                    "keyword": "corruption Bangladesh",
+                    "articles": [
+                        {
+                            "title": "Transparency International Reports Corruption Rise in Infrastructure",
+                            "sentiment": "Negative",
+                            "url": "https://example.com/news1",
+                            "publishedAt": "2026-03-14T10:00:00Z"
+                        },
+                        {
+                            "title": "New Anti-Corruption Measures Implemented by Ministry",
+                            "sentiment": "Positive",
+                            "url": "https://example.com/news2",
+                            "publishedAt": "2026-03-13T08:00:00Z"
+                        }
+                    ]
+                }
+            },
+            4: {
+                method: "GET",
+                name: "Sentiment Stats",
+                url: "http://localhost:1302/api/news/sentiment-stats",
+                status: "200 OK",
+                time: "32 ms",
+                size: "210 B",
+                body: null,
+                response: {
+                    "status": "ok",
+                    "stats": {
+                        "total": 6,
+                        "positive": 2,
+                        "negative": 4,
+                        "positivePercent": 33,
+                        "negativePercent": 67
+                    }
+                }
+            }
+        };
+
+        function syntaxHighlight(json) {
+            if (typeof json != 'string') {
+                json = JSON.stringify(json, undefined, 4);
+            }
+            json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+                var cls = 'json-number';
+                if (/^"/.test(match)) {
+                    if (/:$/.test(match)) {
+                        cls = 'json-key';
+                    } else {
+                        cls = 'json-string';
+                    }
+                } else if (/true|false/.test(match)) {
+                    cls = 'json-boolean';
+                } else if (/null/.test(match)) {
+                    cls = 'json-null';
+                }
+                return '<span class="' + cls + '">' + match + '</span>';
+            });
+        }
+
+        function loadAPI(id) {
+            const api = apis[id];
+            
+            // Sidebar selection
+            document.querySelectorAll('.coll-item').forEach(el => el.classList.remove('selected'));
+            document.querySelector(`.item-${id}`).classList.add('selected');
+
+            document.getElementById('tab-text').innerText = api.name;
+            document.getElementById('tab-method').innerText = api.method;
+            document.getElementById('tab-method').className = `method ${api.method}`;
+            document.getElementById('req-method-display').innerText = api.method;
+            document.getElementById('req-method-display').style.color = api.method === 'POST' ? '#E5A500' : '#0CBB52';
+            document.getElementById('url-field').value = api.url;
+            
+            const bodyTab = document.getElementById('body-tab-link');
+            const paramsTab = document.getElementById('params-tab-link');
+            const bodyPreview = document.getElementById('req-body-preview');
+            
+            document.getElementById('res-status').innerText = api.status;
+            document.getElementById('res-time').innerText = api.time;
+            document.getElementById('res-size').innerText = api.size;
+
+            if (api.method === 'POST') {
+                bodyTab.className = 'active';
+                paramsTab.className = '';
+                bodyPreview.style.display = 'block';
+                document.getElementById('post-body-content').innerText = JSON.stringify(api.body, null, 4);
+            } else {
+                bodyTab.className = '';
+                paramsTab.className = 'active';
+                bodyPreview.style.display = 'none';
+            }
+
+            document.getElementById('json-output').innerHTML = syntaxHighlight(api.response);
+        }
+
+        // Initialize with API 1
+        window.onload = () => loadAPI(1);
+    </script>
+</body>
+</html>

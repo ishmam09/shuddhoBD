@@ -62,6 +62,9 @@ app.use("/api/reports", reportsRoutes);
 import seatsRoutes from "./routes/seats";
 app.use("/api/seats", seatsRoutes);
 
+import newsRoutes from "./routes/news";
+app.use("/api/news", newsRoutes);
+
 app.get("/api/protected/citizen", authMiddleware, requireRoles("citizen", "analyst", "admin"), (req: AuthRequest, res) => {
   res.json({ message: "Citizen-level access granted", user: req.user });
 });
