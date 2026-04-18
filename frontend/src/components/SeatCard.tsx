@@ -1,4 +1,4 @@
-import { TrendingUp, TrendingDown, Minus, Edit2 } from "lucide-react";
+import { TrendingUp, Edit2 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
 interface SeatCardProps {
@@ -8,8 +8,6 @@ interface SeatCardProps {
 
 export default function SeatCard({ seat, onEdit }: SeatCardProps) {
     const { user } = useAuth();
-    const isGrowth = seat.fiveYearGrowthPercentage > 0;
-    const isLoss = seat.fiveYearGrowthPercentage < 0;
 
     const resolvedPartyLogo = seat.partyLogo
         || (seat.party.replace(/\s+/g, '').toLowerCase() === 'khelafatmajlish' ? '/KhelafatMajlish.png' : null);

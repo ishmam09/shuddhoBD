@@ -1,5 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { Clock, AlertTriangle, ShieldCheck, X } from 'lucide-react';
+import ChallengeModal from '../components/ChallengeModal';
+import AdminReviewModal from '../components/AdminReviewModal';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -34,12 +38,17 @@ interface Project {
   budget: number;
   actualCompletion: number;
   milestone: string;
+  phases: any[];
+  challenges?: any[];
 }
 
 export default function ProjectStatus() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [isChallengeModalOpen, setIsChallengeModalOpen] = useState(false);
+  const [isAdminReviewModalOpen, setIsAdminReviewModalOpen] = useState(false);
 
   const fetchProjects = async () => {
     try {
@@ -79,6 +88,19 @@ export default function ProjectStatus() {
         setSelectedProject(null);
         fetchProjects();
       }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleDeleteChallenge = async (challengeId: string) => {
+    if (!selectedProject || !window.confirm("Delete this verified challenge?")) return;
+    try {
+      const res = await fetch(`${API_BASE}/projects/${selectedProject._id}/challenge/${challengeId}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+      if (res.ok) fetchProjects();
     } catch (err) {
       console.error(err);
     }
@@ -174,9 +196,11 @@ export default function ProjectStatus() {
                   <p className="font-medium text-slate-200">{selectedProject.location}</p>
                 </div>
                 <div className="col-span-2">
-                  <p className="text-slate-500 mb-1 tracking-wide text-xs">Milestone</p>
-                  <div className="bg-slate-800 p-3 rounded-lg border border-slate-700 mt-1">
-                    {selectedProject.milestone}
+                  <p className="text-slate-500 mb-1 tracking-wide text-xs">Current Stage</p>
+                  <div className="bg-slate-800 p-3 rounded-lg border border-slate-700 mt-1 font-bold text-shuddho-neon">
+                    {selectedProject.status === 'completed' 
+                      ? 'Completed' 
+                      : (selectedProject.phases?.find(p => p.status === 'current')?.name || 'Not Started')}
                   </div>
                 </div>
                 <div>
@@ -191,6 +215,31 @@ export default function ProjectStatus() {
                 </div>
               </div>
             </div>
+            
+            {/* implementing project timeline and challenge buttons */}
+            <div className="mt-6 flex flex-col xl:flex-row gap-3">
+                <button 
+                  onClick={() => navigate(`/dashboard/project-timeline/${selectedProject._id}`)}
+                  className="btn-timeline flex-1 justify-center"
+                >
+                  <Clock className="w-4 h-4" /> View Project Timeline
+                </button>
+                {user?.role === 'admin' ? (
+                  <button 
+                    onClick={() => setIsAdminReviewModalOpen(true)}
+                    className="btn-primary bg-indigo-600 hover:bg-indigo-500 shadow-indigo-600/30 flex-1 justify-center py-2.5 rounded-xl text-sm"
+                  >
+                    <ShieldCheck className="w-4 h-4" /> Review Challenges
+                  </button>
+                ) : (
+                  <button 
+                    onClick={() => setIsChallengeModalOpen(true)}
+                    className="btn-primary bg-rose-600 hover:bg-rose-500 shadow-rose-600/30 flex-1 justify-center py-2.5 rounded-xl text-sm"
+                  >
+                    <AlertTriangle className="w-4 h-4" /> Challenge Progress
+                  </button>
+                )}
+            </div>
 
             {user?.role === 'admin' && (
               <div className="mt-8 pt-6 border-t border-slate-800 flex justify-end">
@@ -204,6 +253,67 @@ export default function ProjectStatus() {
             )}
           </div>
         </div>
+      )}
+
+      {/* implementing challenge rendering section */}
+      {selectedProject && selectedProject.challenges && selectedProject.challenges.some(c => c.status === 'valid') && (
+          <div id="challenge-review-section" className="mt-8 border-t border-slate-800 pt-8 animate-fade-in-up">
+              <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                  <AlertTriangle className="w-5 h-5 text-rose-400" /> 
+                  Project Progress Challenges
+              </h2>
+
+              {/* Verified Challenges List */}
+              <div className="grid grid-cols-1 gap-4">
+                  {selectedProject.challenges.filter(c => c.status === 'valid').map((challenge, idx) => (
+                      <div key={idx} className="chal-card relative">
+                          {user?.role === 'admin' && (
+                              <button 
+                                  onClick={() => handleDeleteChallenge(challenge._id)}
+                                  className="absolute top-4 right-4 text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 p-2 rounded-lg transition-colors"
+                                  title="Delete Challenge"
+                              >
+                                  <X className="w-4 h-4" />
+                              </button>
+                          )}
+                          <p className="text-slate-300 text-sm leading-relaxed pr-10">{challenge.description}</p>
+                          {challenge.mediaUrls?.length > 0 && (
+                              <div className="chal-media-grid">
+                                  {challenge.mediaUrls.map((url: string, i: number) => (
+                                      <img key={i} src={url} alt={`evidence-${i}`} className="chal-media-item" />
+                                  ))}
+                              </div>
+                          )}
+                          {challenge.adminNote && (
+                              <div className="chal-note-box">
+                                  <p className="chal-note-label">
+                                      <ShieldCheck className="w-3 h-3" /> Official Response
+                                  </p>
+                                  <p className="text-sm text-indigo-100">{challenge.adminNote}</p>
+                              </div>
+                          )}
+                      </div>
+                  ))}
+              </div>
+          </div>
+      )}
+
+      {/* Admin Modal Overlay */}
+      {isAdminReviewModalOpen && selectedProject && (
+          <AdminReviewModal 
+              project={selectedProject}
+              onClose={() => setIsAdminReviewModalOpen(false)}
+              onRefresh={fetchProjects}
+          />
+      )}
+
+      {/* Challenge Modal Overlay */}
+      {isChallengeModalOpen && selectedProject && (
+          <ChallengeModal 
+              projectId={selectedProject._id}
+              onClose={() => setIsChallengeModalOpen(false)}
+              onSuccess={() => { fetchProjects(); }}
+          />
       )}
     </div>
   );

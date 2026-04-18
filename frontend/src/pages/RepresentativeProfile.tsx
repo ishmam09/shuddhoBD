@@ -96,8 +96,8 @@ export default function RepresentativeProfile() {
                 <h1 className="text-3xl font-bold text-white">Constituency Overview</h1>
                 <div className="flex items-center gap-2 text-shuddho-neon font-medium text-sm bg-shuddho-neon/10 px-3 py-1 rounded-full border border-shuddho-neon/20">
                     <MapPin className="w-4 h-4" />
-                    <span>{seat.name}</span>
-                    <span className="text-slate-400 font-mono scale-90 ml-1">(Seat #{seat.seatId})</span>
+                    <span>{dbSeat?.seatName || seat.name}</span>
+                    <span className="text-slate-400 font-mono scale-90 ml-1">(Seat #{dbSeat?.order || seat.seatId})</span>
                 </div>
             </div>
 
