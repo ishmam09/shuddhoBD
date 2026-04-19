@@ -21,12 +21,15 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<AuthPage />} />
+          <Route element={<DashboardLayout />}>
+            <Route path="/news" element={<News />} />
+          </Route>
           <Route path="/dashboard" element={<DashboardLayout />}>
             <Route index element={<Dashboard />} />
             <Route path="reports" element={<Reports />} />
             <Route path="assets" element={<AssetData />} />
             <Route path="anonymous-report" element={<AnonymousReport />} />
-            <Route path="news" element={<News />} />
+            <Route path="anonymous-report" element={<AnonymousReport />} />
             <Route path="profile" element={<Profile />} />
             <Route path="constituency" element={<Constituency />} />
             <Route path="constituency/:seatId" element={<RepresentativeProfile />} />

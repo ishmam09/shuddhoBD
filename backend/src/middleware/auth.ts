@@ -32,9 +32,10 @@ export const authMiddleware = async (req: AuthRequest, res: Response, next: Next
     console.log(`[AUTH] Token valid for user ${decoded.sub}`);
 
     const isDbConnected = mongoose.connection.readyState === 1;
+    const isMockUser = decoded.sub === "mock_admin_id" || decoded.sub === "mock_user_id";
 
-    if (!isDbConnected) {
-      console.warn(`[AUTH] DB Disconnected. Using mock data from token for user ${decoded.sub}`);
+    if (!isDbConnected || isMockUser) {
+      if (!isDbConnected) console.warn(`[AUTH] DB Disconnected. Using mock data from token for user ${decoded.sub}`);
       req.user = {
         _id: decoded.sub as any,
         email: decoded.email,

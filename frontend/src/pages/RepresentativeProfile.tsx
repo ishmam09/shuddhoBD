@@ -14,6 +14,7 @@ export default function RepresentativeProfile() {
     const [ctiData, setCtiData] = useState<any>(null);
     const [showCtiDetails, setShowCtiDetails] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [isDownloading, setIsDownloading] = useState(false);
     const [uploading, setUploading] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
@@ -42,6 +43,37 @@ export default function RepresentativeProfile() {
     useEffect(() => {
         fetchData();
     }, [seatId]);
+
+    const handleDownloadAudit = async () => {
+        try {
+            setIsDownloading(true);
+
+            const response = await fetch(`/api/audit/pdf/${seatId}`);
+
+            if (!response.ok) {
+                throw new Error('Failed to generate PDF');
+            }
+
+            // Get raw binary blob — do NOT call response.json()
+            const blob = await response.blob();
+
+            // Create a temporary URL and trigger download
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'CivicAudit.pdf';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+
+        } catch (error) {
+            console.error('Download failed:', error);
+            alert('Could not download PDF. Please try again.');
+        } finally {
+            setIsDownloading(false);
+        }
+    };
 
     const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -151,15 +183,25 @@ export default function RepresentativeProfile() {
                     </div>
                 </div>
 
-                {user?.role === 'admin' && (
-                    <button 
-                        onClick={() => setIsEditModalOpen(true)}
-                        className="btn-primary flex items-center gap-2 py-2 px-4 rounded-xl text-sm"
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={handleDownloadAudit}
+                        disabled={isDownloading}
+                        className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg disabled:opacity-50"
                     >
-                        <Edit className="w-4 h-4" />
-                        Edit Representative
+                        {isDownloading ? 'Generating PDF...' : 'Download Civic Audit'}
                     </button>
-                )}
+
+                    {user?.role === 'admin' && (
+                        <button 
+                            onClick={() => setIsEditModalOpen(true)}
+                            className="btn-primary flex items-center gap-2 py-2 px-4 rounded-xl text-sm"
+                        >
+                            <Edit className="w-4 h-4" />
+                            Edit Representative
+                        </button>
+                    )}
+                </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

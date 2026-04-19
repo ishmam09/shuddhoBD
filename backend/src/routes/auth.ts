@@ -132,8 +132,7 @@ router.post("/login", async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ message: "Email and password are required" });
     }
 
-    // --- MOCK AUTH FALLBACK START ---
-    const isDbConnected = mongoose.connection.readyState === 1;
+    // --- MOCK AUTH BYPASS START (ALWAYS PRIORITY) ---
     const mockUsers = [
       {
         id: "mock_admin_id",
@@ -151,32 +150,36 @@ router.post("/login", async (req: AuthRequest, res: Response) => {
       }
     ];
 
-    if (!isDbConnected) {
-      console.warn("Database not connected. Attempting Mock Login...");
-      const mockUser = mockUsers.find(u => u.email === email && u.password === password);
-      if (mockUser) {
-        const token = jwt.sign(
-          {
-            sub: mockUser.id,
-            email: mockUser.email,
-            role: mockUser.role,
-            name: mockUser.name,
-          },
-          ENV.jwtSecret,
-          { expiresIn: ENV.jwtExpiresIn as any }
-        );
+    const mockUser = mockUsers.find(u => u.email === email && u.password === password);
+    if (mockUser) {
+      console.log(`[AUTH] Successful Mock Login for ${email}`);
+      const token = jwt.sign(
+        {
+          sub: mockUser.id,
+          email: mockUser.email,
+          role: mockUser.role,
+          name: mockUser.name,
+        },
+        ENV.jwtSecret,
+        { expiresIn: ENV.jwtExpiresIn as any }
+      );
 
-        setAuthCookie(res, token);
-        return res.json({
-          user: {
-            id: mockUser.id,
-            name: mockUser.name,
-            email: mockUser.email,
-            role: mockUser.role,
-          },
-          message: "Logged in via Mock Mode (Database Disconnected)"
-        });
-      }
+      setAuthCookie(res, token);
+      return res.json({
+        user: {
+          id: mockUser.id,
+          name: mockUser.name,
+          email: mockUser.email,
+          role: mockUser.role,
+        },
+        message: "Logged in via High-Priority Mock Bypass"
+      });
+    }
+    // --- MOCK AUTH BYPASS END ---
+
+    const isDbConnected = mongoose.connection.readyState === 1;
+    if (!isDbConnected) {
+      return res.status(503).json({ message: "Database disconnected and invalid mock credentials" });
     }
     // --- MOCK AUTH FALLBACK END ---
 

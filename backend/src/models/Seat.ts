@@ -8,8 +8,12 @@ export interface ISeat extends Document {
     partyLogo?: string;
     candidateImage?: string;
     lastRecordedAsset: string;
+    fiveYearBackAsset?: string;
     fiveYearGrowthPercentage: number;
     yearlyAssets: number[];
+    budgetAllocation: number;
+    sectors: Record<string, number>;
+    projects: string[];
     order: number;
 }
 

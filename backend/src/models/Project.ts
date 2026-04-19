@@ -19,6 +19,7 @@ export interface IChallenge {
 
 export interface IProject extends Document {
   projectId: string;
+  seatId: number;
   name: string;
   manager: string;
   status: string;
@@ -37,6 +38,7 @@ export interface IProject extends Document {
 const ProjectSchema: Schema = new Schema(
   {
     projectId: { type: String, required: true, unique: true },
+    seatId: { type: Number, required: true },
     name: { type: String, required: true },
     manager: { type: String, required: true },
     status: { type: String, required: true },

@@ -1,7 +1,8 @@
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useState, useEffect } from 'react';
-import NewsFeed from '../components/NewsFeed';
+import { useNews } from '../hooks/useNews';
+import NewsCard from '../components/NewsCard';
 
 const API_BASE = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:5001/api`;
 
@@ -10,6 +11,7 @@ export default function Dashboard() {
     const navigate = useNavigate();
     const [stats, setStats] = useState<any>(null);
     const [loadingStats, setLoadingStats] = useState(true);
+    const { articles, loading, error } = useNews();
 
     useEffect(() => {
         const fetchStats = async () => {
@@ -124,20 +126,6 @@ export default function Dashboard() {
             )}
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full">
-                <div className="lg:col-span-1 flex flex-col gap-6">
-                    <div className="bg-shuddho-card rounded-2xl border border-shuddho-border p-6 shadow-sm overflow-hidden flex-1 backdrop-blur-sm">
-                        <div className="flex items-center justify-between mb-6">
-                            <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                                <span className="w-2 h-2 rounded-full bg-shuddho-neon animate-pulse"></span>
-                                Live Feed
-                            </h2>
-                            <div className="px-2 py-0.5 bg-slate-800 rounded text-[10px] text-slate-400 font-bold uppercase tracking-widest border border-white/5">
-                                Anti-Corruption
-                            </div>
-                        </div>
-                        <NewsFeed />
-                    </div>
-                </div>
 
                 <div className="lg:col-span-2">
                     <div className="bg-shuddho-card rounded-2xl border border-shuddho-border p-6 shadow-sm min-h-[500px] w-full relative overflow-hidden flex flex-col">
@@ -149,10 +137,22 @@ export default function Dashboard() {
                              <div className="w-16 h-16 bg-slate-800/50 rounded-full flex items-center justify-center mb-4 border border-dashed border-slate-700">
                                  <svg className="w-8 h-8 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                              </div>
-                             <p className="text-sm font-medium tracking-wide opacity-50">No recent activities found.</p>
                          </div>
                     </div>
                 </div>
+            </div>
+
+            <div className="mt-10 w-full text-left">
+                <h2 className="text-xl font-bold text-white mb-4">Anti-Corruption News</h2>
+                {loading && <p className="text-slate-400 text-sm">Loading news...</p>}
+                {error && <p className="text-shuddho-red text-sm">{error}</p>}
+                {!loading && !error && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {articles.slice(0, 6).map((article, index) => (
+                        <NewsCard key={index} {...article} />
+                    ))}
+                    </div>
+                )}
             </div>
         </div>
     );
