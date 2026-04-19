@@ -31,6 +31,19 @@ export const authMiddleware = async (req: AuthRequest, res: Response, next: Next
     const decoded = jwt.verify(token, ENV.jwtSecret) as JwtPayload;
     console.log(`[AUTH] Token valid for user ${decoded.sub}`);
 
+    const isDbConnected = mongoose.connection.readyState === 1;
+
+    if (!isDbConnected) {
+      console.warn(`[AUTH] DB Disconnected. Using mock data from token for user ${decoded.sub}`);
+      req.user = {
+        _id: decoded.sub as any,
+        email: decoded.email,
+        role: decoded.role,
+        name: decoded.name,
+      } as any;
+      return next();
+    }
+
     const user = await User.findById(decoded.sub).select("name email role phone nid address gender profileImage");
     if (!user) {
       return res.status(401).json({ message: "Invalid token" });

@@ -13,6 +13,7 @@ import RepresentativeProfile from "./pages/RepresentativeProfile";
 import MapPage from "./pages/MapPage";
 import ProjectStatus from "./pages/ProjectStatus";
 import ProjectTimeline from "./pages/ProjectTimeline";
+import CivicAnalyst from "./pages/CivicAnalyst";
 
 function App() {
   return (
@@ -32,6 +33,7 @@ function App() {
             <Route path="map" element={<MapPage />} />
             <Route path="project-status" element={<ProjectStatus />} />
             <Route path="project-timeline/:id" element={<ProjectTimeline />} />
+            <Route path="ai-analyst" element={<CivicAnalyst />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

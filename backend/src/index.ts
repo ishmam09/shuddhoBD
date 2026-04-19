@@ -68,6 +68,12 @@ app.use("/api/news", newsRoutes);
 import projectsRoutes from "./routes/projects";
 app.use("/api/projects", projectsRoutes);
 
+import aiRoutes from "./routes/ai";
+app.use("/api/ai", aiRoutes);
+
+import notificationsRoutes from "./routes/notifications";
+app.use("/api/notifications", notificationsRoutes);
+
 app.get("/api/protected/citizen", authMiddleware, requireRoles("citizen", "analyst", "admin"), (req: AuthRequest, res) => {
   res.json({ message: "Citizen-level access granted", user: req.user });
 });
@@ -94,17 +100,29 @@ const start = async () => {
     if (!ENV.mongoUri) {
       throw new Error("MONGO_URI is not set");
     }
-    await mongoose.connect(ENV.mongoUri, { family: 4 });
-    console.log("Connected to MongoDB");
+    console.log("Attempting to connect to MongoDB...");
+    // Try to connect but don't hang the whole process if it fails
+    await mongoose.connect(ENV.mongoUri, { 
+      serverSelectionTimeoutMS: 5000, 
+    }).catch(err => {
+      console.error("MongoDB Connection Failed (Expected if IP is not whitelisted):", err.message);
+    });
+
+    if (mongoose.connection.readyState === 1) {
+      console.log("Connected to MongoDB successfully");
+    } else {
+      console.warn("Starting server without active MongoDB connection (Mock Mode potential)");
+    }
 
     app.listen(ENV.port, () => {
       console.log(`ShuddhoBD backend running on port ${ENV.port}`);
     });
   } catch (error) {
-    console.error("Failed to start server", error);
+    console.error("Critical failure during startup:", error);
     process.exit(1);
   }
 };
+
 
 start();
 

@@ -55,14 +55,35 @@ router.delete('/:id', authMiddleware, requireRoles('admin'), async (req: AuthReq
 router.put('/:id', authMiddleware, requireRoles('admin'), async (req: AuthRequest, res) => {
   try {
     const updateData = { ...req.body };
+    const projectToUpdate = await Project.findById(req.params.id);
+    if (!projectToUpdate) return res.status(404).json({ message: 'Project not found' });
+
+    // implementing auto-update of phases if total spent is updated directly
+    if (updateData.actualCompletion !== undefined && !updateData.phases) {
+      const newTotal = Number(updateData.actualCompletion);
+      const phases = [...projectToUpdate.phases];
+      
+      // Calculate how much was spent in past phases
+      const pastSpent = phases
+        .filter(p => p.status === 'past')
+        .reduce((sum, p) => sum + (p.spent || 0), 0);
+      
+      // Find the current phase to dump the remaining spent amount into
+      const currentPhaseIndex = phases.findIndex(p => p.status === 'current');
+      
+      if (currentPhaseIndex !== -1) {
+        // Update the current phase's spent amount to match the new total
+        phases[currentPhaseIndex].spent = Math.max(0, newTotal - pastSpent);
+        updateData.phases = phases;
+      }
+    }
     
-    // implementing auto-update of total spent based on phases
+    // implementing auto-update of total spent based on phases (fallback if phases are provided)
     if (updateData.phases && Array.isArray(updateData.phases)) {
-      updateData.actualCompletion = updateData.phases.reduce((sum: number, p: any) => sum + (p.spent || 0), 0);
+      updateData.actualCompletion = updateData.phases.reduce((sum: number, p: any) => sum + (Number(p.spent) || 0), 0);
     }
 
     const project = await Project.findByIdAndUpdate(req.params.id, updateData, { new: true });
-    if (!project) return res.status(404).json({ message: 'Project not found' });
     res.json(project);
   } catch (error) {
     console.error(error);
@@ -144,7 +165,7 @@ router.post('/seed', async (req, res) => {
         });
 
         sampleProjects.push({
-            projectId: `PRJ-XYZ-${100 + i}`,
+            projectId: `PRJ-${100 + i}`,
             name: selectedNames[i],
             manager: `Manager ${String.fromCharCode(65 + i)}`,
             status: statusPool[Math.floor(Math.random() * statusPool.length)],

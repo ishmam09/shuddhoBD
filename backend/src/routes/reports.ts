@@ -4,6 +4,9 @@ import { authMiddleware, AuthRequest } from '../middleware/auth';
 import { uploadMemory, cloudinary } from '../utils/cloudinary';
 import { Readable } from 'stream';
 import crypto from 'crypto';
+import Notification from '../models/Notification';
+
+const HIGH_SEVERITY_KEYWORDS = ['corruption', 'fraud', 'scam', 'extortion', 'violence', 'death', 'casualty', 'disaster', 'emergency', 'leak', 'dangerous', 'hazard', 'bribe', 'stolen', 'theft'];
 
 const router = express.Router();
 
@@ -162,6 +165,17 @@ router.patch('/moderate/:id', authMiddleware, async (req: AuthRequest, res: expr
             return res.status(404).json({ error: 'Report not found' });
         }
 
+        // Notification logic for User
+        if (status === 'Verified' && !updatedReport.isAnonymous && updatedReport.author) {
+            await Notification.create({
+                recipient: updatedReport.author,
+                title: '✅ Report Verified',
+                message: `Your report "${updatedReport.title}" has been verified and published.`,
+                type: 'report_verified',
+                link: '/dashboard/reports'
+            });
+        }
+
         res.json(updatedReport);
     } catch (err: any) {
         res.status(500).json({ error: 'Failed to moderate report' });
@@ -230,6 +244,18 @@ router.post('/', authMiddleware, uploadMemory.array('images', 5), async (req: Au
         });
 
         await newReport.save();
+
+        // Notification logic for Admin
+        const containsHighSeverity = HIGH_SEVERITY_KEYWORDS.some(kw => combinedText.toLowerCase().includes(kw));
+        
+        await Notification.create({
+            recipient: null, // Global admin
+            title: containsHighSeverity ? '🔥 Critical Report Submitted' : '📄 New Report Request',
+            message: `A new report "${title}" has been submitted for review. ${containsHighSeverity ? 'Contains high-severity keywords.' : ''}`,
+            type: containsHighSeverity ? 'high_severity' : 'new_report',
+            link: '/dashboard/reports'
+        });
+
         res.status(201).json(newReport);
     } catch (err: any) {
         console.error("Standard Report Failure:", err);
@@ -312,6 +338,17 @@ router.post('/anonymous', authMiddleware, uploadMemory.array('images', 5), async
 
         await newReport.save();
         console.log("Report saved successfully with tracking ID:", trackingId);
+
+        // Notification logic for Admin
+        const containsHighSeverity = HIGH_SEVERITY_KEYWORDS.some(kw => combinedText.toLowerCase().includes(kw));
+        
+        await Notification.create({
+            recipient: null, // Global admin
+            title: containsHighSeverity ? '🔥 Critical Anonymous Report' : '🕵️ New Anonymous Submission',
+            message: `An anonymous report "${title}" has been submitted. Tracking ID: ${trackingId}.`,
+            type: containsHighSeverity ? 'high_severity' : 'new_report',
+            link: '/dashboard/reports'
+        });
 
         res.status(201).json({
             message: 'Report submitted autonomously and securely via Cloudinary.',

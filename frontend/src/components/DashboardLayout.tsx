@@ -1,5 +1,6 @@
 import { Navigate, Outlet, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import NotificationCenter from './NotificationCenter';
 
 const API_BASE = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:5001/api`;
 
@@ -60,15 +61,16 @@ export default function DashboardLayout() {
                     </Link>
                 </div>
 
-                <nav className="flex items-center justify-center gap-8">
+                <nav className="flex items-center justify-center gap-4">
                     <NavItem label="Dashboard" href="/dashboard" active={location.pathname === '/dashboard'} />
                     <NavItem label="Project Status" href="/dashboard/project-status" active={location.pathname === '/dashboard/project-status'} />
                     <NavItem label="Reports" href="/dashboard/reports" active={location.pathname === '/dashboard/reports'} />
                     <NavItem label="Asset Data" href="/dashboard/assets" active={location.pathname === '/dashboard/assets'} />
-                    <NavItem label="Anonymous Report" href="/dashboard/anonymous-report" active={location.pathname === '/dashboard/anonymous-report'} />
+                    <NavItem label="Anonymous" href="/dashboard/anonymous-report" active={location.pathname === '/dashboard/anonymous-report'} />
                     <NavItem label="Map" href="/dashboard/map" active={location.pathname === '/dashboard/map'} />
                     <NavItem label="Constituency" href="/dashboard/constituency" active={location.pathname === '/dashboard/constituency'} />
                     <NavItem label="News" href="/dashboard/news" active={location.pathname === '/dashboard/news'} />
+                    <NavItem label="AI Analyst" href="/dashboard/ai-analyst" active={location.pathname === '/dashboard/ai-analyst'} />
                 </nav>
 
                 <div className="flex-1 flex items-center justify-end gap-6">
@@ -79,6 +81,8 @@ export default function DashboardLayout() {
                             <div className="w-4 h-4 rounded-full bg-shuddho-neon absolute right-1 transition-all"></div>
                         </div>
                     </div>
+                    {/* Notification Icon */}
+                    <NotificationCenter />
 
                     {/* User Profile Avatar / Dropdown trigger */}
                     <Link to="/dashboard/profile" className="w-10 h-10 rounded-full bg-slate-700 border-2 border-transparent hover:border-shuddho-neon transition-colors overflow-hidden flex items-center justify-center relative group">

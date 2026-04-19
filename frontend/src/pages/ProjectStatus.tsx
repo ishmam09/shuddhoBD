@@ -4,6 +4,8 @@ import { useAuth } from '../context/AuthContext';
 import { Clock, AlertTriangle, ShieldCheck, X } from 'lucide-react';
 import ChallengeModal from '../components/ChallengeModal';
 import AdminReviewModal from '../components/AdminReviewModal';
+import CreateProjectModal from '../components/CreateProjectModal';
+import UpdateProgressModal from '../components/UpdateProgressModal';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -49,6 +51,8 @@ export default function ProjectStatus() {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [isChallengeModalOpen, setIsChallengeModalOpen] = useState(false);
   const [isAdminReviewModalOpen, setIsAdminReviewModalOpen] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isUpdateSpentModalOpen, setIsUpdateSpentModalOpen] = useState(false);
 
   const fetchProjects = async () => {
     try {
@@ -143,7 +147,15 @@ export default function ProjectStatus() {
           <p className="text-slate-400 text-sm mt-1">Select a project to monitor financial allocations, spending, and execution progress.</p>
         </div>
 
-        <div className="flex flex-col items-end gap-2 relative z-20">
+        <div className="flex flex-row items-center gap-4 relative z-20">
+          {user?.role === 'admin' && (
+            <button
+              onClick={() => setIsCreateModalOpen(true)}
+              className="px-6 py-3 bg-shuddho-neon text-slate-900 font-bold rounded-xl hover:bg-[#00dpr6] transition-all whitespace-nowrap"
+            >
+              + Add Project
+            </button>
+          )}
           <select
             className="w-auto min-w-[280px] max-w-[450px] bg-slate-800 border border-slate-700 text-white rounded-lg p-3 outline-none focus:border-shuddho-neon transition-colors cursor-pointer"
             onChange={handleSelectProject}
@@ -225,12 +237,20 @@ export default function ProjectStatus() {
                   <Clock className="w-4 h-4" /> View Project Timeline
                 </button>
                 {user?.role === 'admin' ? (
-                  <button 
-                    onClick={() => setIsAdminReviewModalOpen(true)}
-                    className="btn-primary bg-indigo-600 hover:bg-indigo-500 shadow-indigo-600/30 flex-1 justify-center py-2.5 rounded-xl text-sm"
-                  >
-                    <ShieldCheck className="w-4 h-4" /> Review Challenges
-                  </button>
+                  <div className="flex flex-1 gap-2">
+                    <button 
+                      onClick={() => setIsUpdateSpentModalOpen(true)}
+                      className="btn-primary bg-emerald-600 hover:bg-emerald-500 shadow-emerald-600/30 flex-1 justify-center py-2.5 rounded-xl text-sm"
+                    >
+                      Update Spent
+                    </button>
+                    <button 
+                      onClick={() => setIsAdminReviewModalOpen(true)}
+                      className="btn-primary bg-indigo-600 hover:bg-indigo-500 shadow-indigo-600/30 flex-1 justify-center py-2.5 rounded-xl text-sm"
+                    >
+                      <ShieldCheck className="w-4 h-4" /> Review
+                    </button>
+                  </div>
                 ) : (
                   <button 
                     onClick={() => setIsChallengeModalOpen(true)}
@@ -312,6 +332,23 @@ export default function ProjectStatus() {
           <ChallengeModal 
               projectId={selectedProject._id}
               onClose={() => setIsChallengeModalOpen(false)}
+              onSuccess={() => { fetchProjects(); }}
+          />
+      )}
+
+      {/* Create Project Modal */}
+      {isCreateModalOpen && (
+          <CreateProjectModal 
+              onClose={() => setIsCreateModalOpen(false)}
+              onSuccess={() => { fetchProjects(); }}
+          />
+      )}
+
+      {/* Update Spent Modal */}
+      {isUpdateSpentModalOpen && selectedProject && (
+          <UpdateProgressModal 
+              project={selectedProject}
+              onClose={() => setIsUpdateSpentModalOpen(false)}
               onSuccess={() => { fetchProjects(); }}
           />
       )}
