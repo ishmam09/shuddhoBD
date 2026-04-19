@@ -1,0 +1,117 @@
+import express from "express";
+import cors from "cors";
+import mongoose from "mongoose";
+import cookieParser from "cookie-parser";
+import dns from "dns";
+
+// Force Google/Cloudflare DNS to bypass local ISP SRV resolution bugs on Windows
+try { dns.setServers(["8.8.8.8", "1.1.1.1"]); } catch (e) { console.warn("Could not set DNS servers"); }
+
+import authRoutes from "./routes/auth";
+import { ENV } from "./config/env";
+import { authMiddleware, requireRoles, AuthRequest } from "./middleware/auth";
+
+const app = express();
+
+const allowedOrigins = [
+  ENV.clientUrl || "http://127.0.0.1:5173",
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+];
+
+const corsOptions: cors.CorsOptions = {
+  origin: (origin, callback) => {
+    // Allow localhost, 127.0.0.1, or any local network IP
+    if (
+      !origin ||
+      allowedOrigins.includes(origin) ||
+      origin.startsWith("http://192.168.") ||
+      origin.startsWith("http://10.")
+    ) {
+      callback(null, true);
+    } else {
+      console.warn(`CORS blocked request from origin: ${origin}`);
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  optionsSuccessStatus: 204,
+};
+
+app.use(cors(corsOptions));
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url} - Type: ${req.headers['content-type']}`);
+  next();
+});
+
+app.use(express.json());
+app.use(cookieParser());
+app.use("/uploads", express.static("uploads"));
+
+app.get("/api/health", (_req, res) => {
+  res.json({ status: "ok", service: "ShuddhoBD backend" });
+});
+
+app.use("/api/auth", authRoutes);
+
+import reportsRoutes from "./routes/reports";
+app.use("/api/reports", reportsRoutes);
+
+import seatsRoutes from "./routes/seats";
+app.use("/api/seats", seatsRoutes);
+
+import newsRoutes from "./routes/news";
+app.use("/api/news", newsRoutes);
+
+import projectsRoutes from "./routes/projects";
+app.use("/api/projects", projectsRoutes);
+
+import aiRoutes from "./routes/ai";
+app.use("/api/ai", aiRoutes);
+
+import notificationsRoutes from "./routes/notifications";
+app.use("/api/notifications", notificationsRoutes);
+
+app.get("/api/protected/citizen", authMiddleware, requireRoles("citizen", "analyst", "admin"), (req: AuthRequest, res) => {
+  res.json({ message: "Citizen-level access granted", user: req.user });
+});
+
+app.get("/api/protected/analyst", authMiddleware, requireRoles("analyst", "admin"), (req: AuthRequest, res) => {
+  res.json({ message: "Analyst-level access granted", user: req.user });
+});
+
+app.get("/api/protected/admin", authMiddleware, requireRoles("admin"), (req: AuthRequest, res) => {
+  res.json({ message: "Admin-level access granted", user: req.user });
+});
+
+// Global Error Handler
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error('[GLOBAL ERROR HANDLER]', err);
+  res.status(err.status || 500).json({
+    message: err.message || 'Internal Server Error',
+    error: process.env.NODE_ENV === 'development' ? err : {}
+  });
+});
+
+const start = async () => {
+  try {
+    if (!ENV.mongoUri) {
+      throw new Error("MONGO_URI is not set");
+    }
+    await mongoose.connect(ENV.mongoUri, { family: 4 });
+    console.log("Connected to MongoDB");
+
+    app.listen(ENV.port, () => {
+      console.log(`ShuddhoBD backend running on port ${ENV.port}`);
+    });
+  } catch (error) {
+    console.error("Failed to start server", error);
+    process.exit(1);
+  }
+};
+
+
+start();
+
