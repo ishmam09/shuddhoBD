@@ -132,6 +132,54 @@ router.post("/login", async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ message: "Email and password are required" });
     }
 
+    // --- MOCK AUTH FALLBACK START ---
+    const isDbConnected = mongoose.connection.readyState === 1;
+    const mockUsers = [
+      {
+        id: "mock_admin_id",
+        name: "Mock Admin",
+        email: "admin@shuddhobd.com",
+        password: "adminpassword123",
+        role: "admin",
+      },
+      {
+        id: "mock_user_id",
+        name: "Mock User",
+        email: "faitnanjum18@gmail.com",
+        password: "password123",
+        role: "citizen",
+      }
+    ];
+
+    if (!isDbConnected) {
+      console.warn("Database not connected. Attempting Mock Login...");
+      const mockUser = mockUsers.find(u => u.email === email && u.password === password);
+      if (mockUser) {
+        const token = jwt.sign(
+          {
+            sub: mockUser.id,
+            email: mockUser.email,
+            role: mockUser.role,
+            name: mockUser.name,
+          },
+          ENV.jwtSecret,
+          { expiresIn: ENV.jwtExpiresIn as any }
+        );
+
+        setAuthCookie(res, token);
+        return res.json({
+          user: {
+            id: mockUser.id,
+            name: mockUser.name,
+            email: mockUser.email,
+            role: mockUser.role,
+          },
+          message: "Logged in via Mock Mode (Database Disconnected)"
+        });
+      }
+    }
+    // --- MOCK AUTH FALLBACK END ---
+
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(401).json({ message: "Invalid credentials" });
