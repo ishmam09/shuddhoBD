@@ -8,8 +8,8 @@ export interface ISeat extends Document {
     partyLogo?: string;
     candidateImage?: string;
     lastRecordedAsset: string;
-    fiveYearBackAsset?: string;
     fiveYearGrowthPercentage: number;
+    yearlyAssets: number[];
     order: number;
 }
 
@@ -23,6 +23,10 @@ const seatSchema = new Schema<ISeat>({
     lastRecordedAsset: { type: String, default: "N/A" },
     fiveYearBackAsset: { type: String },
     fiveYearGrowthPercentage: { type: Number, default: 0 },
+    yearlyAssets: { type: [Number], default: [] },
+    budgetAllocation: { type: Number, default: 0 },
+    sectors: { type: Map, of: Number, default: {} },
+    projects: { type: [String], default: [] },
     order: { type: Number, default: 0 },
 }, { timestamps: true });
 

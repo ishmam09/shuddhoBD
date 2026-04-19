@@ -135,13 +135,22 @@ router.patch('/moderate/:id', authMiddleware, async (req: AuthRequest, res: expr
             return res.status(403).json({ error: 'Access denied. Admin only.' });
         }
 
-        const { status, category, severity, severityScore } = req.body;
+        const { status, category, severity, severityScore, resolution } = req.body;
         const updateData: any = {};
 
         if (status) updateData.status = status;
         if (category) updateData.category = category;
         if (severity) updateData.severity = severity;
         if (severityScore !== undefined) updateData.severityScore = severityScore;
+        if (resolution) {
+            updateData.resolution = resolution;
+            if (resolution === 'Solved') {
+                updateData.resolvedAt = new Date();
+            } else {
+                // If it was solved but moved back to ongoing/unsolved, clear the timestamp
+                updateData.resolvedAt = null;
+            }
+        }
 
         const updatedReport = await (Report as any).findByIdAndUpdate(
             req.params.id,
@@ -164,7 +173,7 @@ router.patch('/moderate/:id', authMiddleware, async (req: AuthRequest, res: expr
 router.post('/', authMiddleware, uploadMemory.array('images', 5), async (req: AuthRequest, res: express.Response) => {
     try {
         console.log("Standard Report Submission Started");
-        const { title, description, location } = req.body;
+        const { title, description, location, seatId } = req.body;
 
         if (!title || !description || !location) {
             return res.status(400).json({ error: 'Title, description, and location are required' });
@@ -216,6 +225,7 @@ router.post('/', authMiddleware, uploadMemory.array('images', 5), async (req: Au
             category: analysis.category,
             severity: analysis.severity,
             severityScore: analysis.severityScore,
+            seatId: seatId ? Number(seatId) : undefined,
             isAnonymous: false
         });
 
@@ -239,7 +249,7 @@ router.post('/anonymous', authMiddleware, uploadMemory.array('images', 5), async
         const files = req.files as Express.Multer.File[];
         console.log("Files detected:", files ? `${files.length} files` : "0 files");
 
-        const { title, description, location } = req.body;
+        const { title, description, location, seatId } = req.body;
 
         if (!title || !description || !location) {
             console.log("Missing fields:", { title, description, location });
@@ -296,7 +306,8 @@ router.post('/anonymous', authMiddleware, uploadMemory.array('images', 5), async
             severity: analysis.severity,
             severityScore: analysis.severityScore,
             isAnonymous: true,
-            trackingId
+            trackingId,
+            seatId: seatId ? Number(seatId) : undefined
         });
 
         await newReport.save();
@@ -335,6 +346,91 @@ router.delete('/:id', authMiddleware, async (req: AuthRequest, res: express.Resp
         res.json({ message: 'Report deleted successfully' });
     } catch (err: any) {
         res.status(500).json({ error: 'Failed to delete report' });
+    }
+});
+
+// GET CTI Score (Public)
+router.get('/cti/:seatId', async (req: express.Request, res: express.Response) => {
+    try {
+        const seatId = Number(req.params.seatId);
+        
+        const totalComplaints = await Report.countDocuments({ seatId });
+        const unresolved = await Report.countDocuments({ 
+            seatId, 
+            status: 'Verified',
+            resolution: { $ne: 'Solved' } 
+        });
+        const ongoing = await Report.countDocuments({ 
+            seatId, 
+            status: 'Verified',
+            resolution: 'Ongoing' 
+        });
+        
+        // y: Unsolved reports (Must be Verified)
+        const verifiedUnsolvedCount = await Report.countDocuments({ 
+            seatId, 
+            status: 'Verified',
+            resolution: 'Unsolved'
+        });
+
+        // z: project delay calculation (Actual Average Days)
+        // Focus on 'Infrastructure Delay' category that is 'Verified' AND 'Solved'
+        const solvedInfraReports = await Report.find({ 
+            seatId, 
+            status: 'Verified',
+            category: 'Infrastructure Delay',
+            resolution: 'Solved',
+            resolvedAt: { $exists: true, $ne: null }
+        });
+
+        let projectDelayDays = 0;
+        if (solvedInfraReports.length > 0) {
+            const totalDelayMs = solvedInfraReports.reduce((acc, r) => {
+                const created = new Date((r as any).createdAt).getTime();
+                const resolved = new Date((r as any).resolvedAt).getTime();
+                return acc + (resolved - created);
+            }, 0);
+            
+            // Convert Ms to Days (1 day = 86400000 ms)
+            // Using a minimum granularity of 0.1 days for fresh data
+            projectDelayDays = Number((totalDelayMs / solvedInfraReports.length / 86400000).toFixed(1));
+        }
+
+        // Updated Scoring Logic (Ratio-Based)
+        // Solved = 100%, Ongoing = 50%, Unsolved = 0%
+        const solvedCount = await Report.countDocuments({ seatId, status: 'Verified', resolution: 'Solved' });
+        
+        let score = 100;
+        if (totalComplaints > 0) {
+            const resolutionRate = (solvedCount + (ongoing * 0.5)) / totalComplaints;
+            score = resolutionRate * 100;
+        }
+
+        // Apply Delay Penalty: -1 point per 2 days of average delay, max -20
+        const delayPenalty = Math.min(20, projectDelayDays / 2);
+        score = Math.max(0, score - delayPenalty);
+        
+        // Round to nearest integer
+        score = Math.round(score);
+
+        let status = 'Good';
+        if (score < 40) status = 'Critical';
+        else if (score < 70) status = 'Moderate';
+
+        res.json({
+            seatId,
+            score,
+            status,
+            breakdown: {
+                total: totalComplaints,
+                solved: solvedCount,
+                unresolved: verifiedUnsolvedCount,
+                ongoing,
+                projectDelay: projectDelayDays
+            }
+        });
+    } catch (err: any) {
+        res.status(500).json({ error: 'Failed to calculate CTI score' });
     }
 });
 

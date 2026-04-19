@@ -48,6 +48,18 @@ const ReportSchema = new mongoose.Schema({
         enum: ['Pending', 'Under Review', 'Verified', 'Resolved', 'Rejected'],
         default: 'Pending'
     },
+    resolution: {
+        type: String,
+        enum: ['Solved', 'Ongoing', 'Unsolved'],
+        default: 'Unsolved'
+    },
+    seatId: {
+        type: Number,
+        required: false
+    },
+    resolvedAt: {
+        type: Date
+    },
     createdAt: {
         type: Date,
         default: Date.now

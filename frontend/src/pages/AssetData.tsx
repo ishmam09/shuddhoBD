@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Search, ListFilter, Plus } from "lucide-react";
 import SeatCard from "../components/SeatCard";
 import AdminSeatModal from "../components/AdminSeatModal";
+import AssetGrowthModal from "../components/AssetGrowthModal";
 import { useAuth } from "../context/AuthContext";
 
 const API_BASE = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:5001/api`;
@@ -16,6 +17,9 @@ export default function AssetData() {
 
     const [modalOpen, setModalOpen] = useState(false);
     const [selectedSeat, setSelectedSeat] = useState<any>(null);
+
+    const [growthModalOpen, setGrowthModalOpen] = useState(false);
+    const [selectedGrowthSeat, setSelectedGrowthSeat] = useState<any>(null);
 
     const fetchSeats = async () => {
         try {
@@ -48,6 +52,11 @@ export default function AssetData() {
     const handleSaved = () => {
         setModalOpen(false);
         fetchSeats();
+    };
+
+    const handleViewGrowth = (seat: any) => {
+        setSelectedGrowthSeat(seat);
+        setGrowthModalOpen(true);
     };
 
     // Filter and sort
@@ -147,7 +156,7 @@ export default function AssetData() {
 
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                                 {group.seats.map((seat: any) => (
-                                    <SeatCard key={seat._id} seat={seat} onEdit={handleEdit} />
+                                    <SeatCard key={seat._id} seat={seat} onEdit={handleEdit} onViewGrowth={handleViewGrowth} />
                                 ))}
                             </div>
                         </div>
@@ -160,6 +169,14 @@ export default function AssetData() {
                     seat={selectedSeat}
                     onClose={() => setModalOpen(false)}
                     onSaved={handleSaved}
+                    mode="assets"
+                />
+            )}
+
+            {growthModalOpen && selectedGrowthSeat && (
+                <AssetGrowthModal
+                    seat={selectedGrowthSeat}
+                    onClose={() => setGrowthModalOpen(false)}
                 />
             )}
         </div>

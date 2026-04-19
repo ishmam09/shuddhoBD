@@ -1,31 +1,77 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, MapPin, Target, Landmark, PieChart } from 'lucide-react';
+import { ArrowLeft, MapPin, Target, Landmark, PieChart, Shield, ChevronDown, ChevronUp, Camera, User, Edit } from 'lucide-react';
 import { constituenciesData } from '../data/constituencies';
+import { useAuth } from '../context/AuthContext';
+import AdminSeatModal from '../components/AdminSeatModal';
 
 export default function RepresentativeProfile() {
     const { seatId } = useParams();
     const navigate = useNavigate();
 
+    const { user } = useAuth();
     const [dbSeat, setDbSeat] = useState<any>(null);
+    const [ctiData, setCtiData] = useState<any>(null);
+    const [showCtiDetails, setShowCtiDetails] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [uploading, setUploading] = useState(false);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+
+    const fetchData = async () => {
+        try {
+            const API_BASE = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:5001/api`;
+            
+            // Fetch Seat Info
+            const seatRes = await fetch(`${API_BASE}/seats`, { credentials: "include" });
+            const seatData = await seatRes.json();
+            const matched = seatData.find((s: any) => s.order === Number(seatId));
+            setDbSeat(matched);
+
+            // Fetch CTI Score
+            const ctiRes = await fetch(`${API_BASE}/reports/cti/${seatId}`, { credentials: "include" });
+            const cti = await ctiRes.json();
+            if (ctiRes.ok) setCtiData(cti);
+
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
-        const fetchSeat = async () => {
-            try {
-                const API_BASE = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:5001/api`;
-                const res = await fetch(`${API_BASE}/seats`, { credentials: "include" });
-                const data = await res.json();
-                const matched = data.find((s: any) => s.order === Number(seatId));
-                setDbSeat(matched);
-            } catch (err) {
-                console.error(err);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchSeat();
+        fetchData();
     }, [seatId]);
+
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file || !dbSeat) return;
+
+        setUploading(true);
+        try {
+            const formData = new FormData();
+            formData.append('image', file);
+
+            const API_BASE = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:5001/api`;
+            const res = await fetch(`${API_BASE}/seats/${dbSeat._id}/image`, {
+                method: 'POST',
+                credentials: 'include',
+                body: formData
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                setDbSeat((prev: any) => ({ ...prev, candidateImage: data.candidateImage }));
+            } else {
+                alert("Failed to upload image. Please try again.");
+            }
+        } catch (err) {
+            console.error("Upload Error:", err);
+            alert("An error occurred during upload.");
+        } finally {
+            setUploading(false);
+        }
+    };
 
     const seat = constituenciesData.find(s => s.seatId === Number(seatId));
 
@@ -50,8 +96,11 @@ export default function RepresentativeProfile() {
     }
 
     const rep = seat.representative;
-    // @ts-ignore
-    const { experience, budgetAllocation, sectors, projects } = rep;
+    // Prefer database values if they exist, otherwise fallback to mock data
+    const budgetAllocation = dbSeat?.budgetAllocation || rep.budgetAllocation;
+    const sectors = (dbSeat?.sectors && Object.keys(dbSeat.sectors).length > 0) ? dbSeat.sectors : rep.sectors;
+    const projects = (dbSeat?.projects && dbSeat.projects.length > 0) ? dbSeat.projects : rep.projects;
+    const { experience } = rep;
 
     // Fixed color mapping for the 8 sectors
     const sectorColors = [
@@ -92,13 +141,25 @@ export default function RepresentativeProfile() {
                 Return to Constituencies Map
             </button>
 
-            <div className="flex items-center gap-3 mb-6">
-                <h1 className="text-3xl font-bold text-white">Constituency Overview</h1>
-                <div className="flex items-center gap-2 text-shuddho-neon font-medium text-sm bg-shuddho-neon/10 px-3 py-1 rounded-full border border-shuddho-neon/20">
-                    <MapPin className="w-4 h-4" />
-                    <span>{dbSeat?.seatName || seat.name}</span>
-                    <span className="text-slate-400 font-mono scale-90 ml-1">(Seat #{dbSeat?.order || seat.seatId})</span>
+            <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                    <h1 className="text-3xl font-bold text-white">Constituency Overview</h1>
+                    <div className="flex items-center gap-2 text-shuddho-neon font-medium text-sm bg-shuddho-neon/10 px-3 py-1 rounded-full border border-shuddho-neon/20">
+                        <MapPin className="w-4 h-4" />
+                        <span>{dbSeat?.seatName || seat.name}</span>
+                        <span className="text-slate-400 font-mono scale-90 ml-1">(Seat #{dbSeat?.order || seat.seatId})</span>
+                    </div>
                 </div>
+
+                {user?.role === 'admin' && (
+                    <button 
+                        onClick={() => setIsEditModalOpen(true)}
+                        className="btn-primary flex items-center gap-2 py-2 px-4 rounded-xl text-sm"
+                    >
+                        <Edit className="w-4 h-4" />
+                        Edit Representative
+                    </button>
+                )}
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -118,16 +179,33 @@ export default function RepresentativeProfile() {
                         <div className="px-6 pb-8 relative flex flex-col items-center text-center">
 
                             {/* Floating Avatar */}
-                            <div className="-mt-16 z-10 mb-4">
+                            <div className="-mt-16 z-10 mb-4 relative group">
                                 <div
-                                    className="bg-shuddho-bg p-1.5 rounded-full border-4 shadow-lg inline-block"
+                                    className="bg-shuddho-bg p-1.5 rounded-full border-4 shadow-lg inline-block relative overflow-hidden"
                                     style={{ borderColor: rep.party.color }}
                                 >
-                                    <img
-                                        src={dbSeat?.candidateImage || rep.photo}
-                                        alt={dbSeat?.mpName || rep.name}
-                                        className="w-24 h-24 rounded-full object-cover"
-                                    />
+                                    {dbSeat?.candidateImage ? (
+                                        <img
+                                            src={dbSeat.candidateImage.startsWith('http') ? dbSeat.candidateImage : `${import.meta.env.VITE_SERVER_URL || "http://localhost:5001"}${dbSeat.candidateImage}`}
+                                            alt={dbSeat?.mpName || rep.name}
+                                            className="w-24 h-24 rounded-full object-cover"
+                                        />
+                                    ) : (
+                                        <div className="w-24 h-24 rounded-full bg-slate-800 flex items-center justify-center">
+                                            <User className="w-12 h-12 text-slate-600" />
+                                        </div>
+                                    )}
+
+                                    {/* Admin Upload Overlay */}
+                                    {user?.role === 'admin' && (
+                                        <label className={`absolute inset-0 bg-black/60 flex flex-col items-center justify-center cursor-pointer transition-opacity ${dbSeat?.candidateImage ? 'opacity-0 group-hover:opacity-100' : 'opacity-100'}`}>
+                                            <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} disabled={uploading} />
+                                            <Camera className={`w-6 h-6 text-white ${uploading ? 'animate-pulse' : ''}`} />
+                                            <span className="text-[8px] font-bold text-white uppercase tracking-wider mt-1">
+                                                {uploading ? 'Wait...' : 'Upload'}
+                                            </span>
+                                        </label>
+                                    )}
                                 </div>
                             </div>
 
@@ -146,11 +224,109 @@ export default function RepresentativeProfile() {
                                 ) : (
                                     <div className="text-4xl mb-2 drop-shadow-md">{rep.party.symbol}</div>
                                 )}
-                                <p className="text-xs text-slate-400 mb-1">Political Affiliation</p>
                                 <p className="font-bold text-white">
                                     {dbSeat?.party || rep.party.name}
                                 </p>
                             </div>
+
+                            {/* Civic Trust Index (CTI) Widget */}
+                            {ctiData && (
+                                <div className="w-full mt-4 bg-slate-900 border border-slate-700/50 rounded-2xl p-5 shadow-inner relative overflow-hidden group">
+                                    {/* Background decorative shield icon */}
+                                    <Shield className={`absolute -right-4 -bottom-4 w-24 h-24 opacity-5 transition-transform duration-700 group-hover:scale-110 group-hover:rotate-12 ${
+                                        ctiData.status === 'Good' ? 'text-green-500' :
+                                        ctiData.status === 'Moderate' ? 'text-amber-500' : 'text-red-500'
+                                    }`} />
+                                    
+                                    <div className="relative z-10">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <div className="flex items-center gap-2">
+                                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                                                    ctiData.status === 'Good' ? 'bg-green-500/20 text-green-400' :
+                                                    ctiData.status === 'Moderate' ? 'bg-amber-500/20 text-amber-400' : 'bg-red-500/20 text-red-400'
+                                                }`}>
+                                                    <Shield className="w-4 h-4" />
+                                                </div>
+                                                <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Civic Trust Index</span>
+                                            </div>
+                                            <div className="flex flex-col items-end">
+                                                <span className={`text-[10px] font-black uppercase tracking-widest ${
+                                                    ctiData.status === 'Good' ? 'text-green-500' :
+                                                    ctiData.status === 'Moderate' ? 'text-amber-500' : 'text-red-500'
+                                                }`}>
+                                                    {ctiData.status}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-baseline gap-1 mb-1">
+                                            <span className="text-4xl font-black text-white tracking-tighter">
+                                                {ctiData.score}
+                                            </span>
+                                            <span className="text-slate-500 text-xs font-bold uppercase">/ 100</span>
+                                        </div>
+
+                                        {/* Progress Bar */}
+                                        <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden mb-4">
+                                            <div 
+                                                className={`h-full transition-all duration-1000 ease-out ${
+                                                    ctiData.status === 'Good' ? 'bg-green-500' :
+                                                    ctiData.status === 'Moderate' ? 'bg-amber-500' : 'bg-red-500'
+                                                }`}
+                                                style={{ width: `${ctiData.score}%` }}
+                                            />
+                                        </div>
+
+
+
+                                        {/* Dropdown / Expandable Section */}
+                                        <div className="mt-4 pt-4 border-t border-slate-800">
+                                            <button 
+                                                onClick={() => setShowCtiDetails(!showCtiDetails)}
+                                                className="w-full flex items-center justify-between text-[10px] font-bold text-indigo-400 hover:text-indigo-300 transition-colors uppercase tracking-widest"
+                                            >
+                                                Detailed Analysis
+                                                {showCtiDetails ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                                            </button>
+
+                                            {showCtiDetails && (
+                                                <div className="mt-4 space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
+                                                    <div className="flex items-start gap-3 p-2 bg-slate-800/30 rounded-lg">
+                                                        <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 mt-1.5 shrink-0" />
+                                                        <p className="text-[11px] text-slate-300 leading-tight">
+                                                            <span className="font-bold text-white">"{ctiData.breakdown.total}"</span> complaints are submitted
+                                                        </p>
+                                                    </div>
+                                                    <div className="flex items-start gap-3 p-2 bg-slate-800/30 rounded-lg">
+                                                        <div className="w-1.5 h-1.5 rounded-full bg-green-500 mt-1.5 shrink-0" />
+                                                        <p className="text-[11px] text-slate-300 leading-tight">
+                                                            <span className="font-bold text-white">"{ctiData.breakdown.solved}"</span> Resolved Problems
+                                                        </p>
+                                                    </div>
+                                                    <div className="flex items-start gap-3 p-2 bg-slate-800/30 rounded-lg">
+                                                        <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5 shrink-0" />
+                                                        <p className="text-[11px] text-slate-300 leading-tight">
+                                                            <span className="font-bold text-white">"{ctiData.breakdown.ongoing}"</span> Reports are Ongoing
+                                                        </p>
+                                                    </div>
+                                                    <div className="flex items-start gap-3 p-2 bg-slate-800/30 rounded-lg">
+                                                        <div className="w-1.5 h-1.5 rounded-full bg-red-500 mt-1.5 shrink-0" />
+                                                        <p className="text-[11px] text-slate-300 leading-tight">
+                                                            <span className="font-bold text-white">"{ctiData.breakdown.unresolved}"</span> Unsolved Reports
+                                                        </p>
+                                                    </div>
+                                                    <div className="flex items-start gap-3 p-2 bg-slate-800/30 rounded-lg">
+                                                        <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5 shrink-0" />
+                                                        <p className="text-[11px] text-slate-300 leading-tight">
+                                                            <span className="font-bold text-white">"{ctiData.breakdown.projectDelay} days"</span> average project delay
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
 
                             {/* Full Profile Bar removed to keep tile neat and purely overview focused as requested */}
                         </div>
@@ -258,6 +434,17 @@ export default function RepresentativeProfile() {
                 </div>
             </div>
 
+            {isEditModalOpen && (
+                <AdminSeatModal 
+                    seat={dbSeat} 
+                    onClose={() => setIsEditModalOpen(false)} 
+                    onSaved={() => {
+                        setIsEditModalOpen(false);
+                        fetchData();
+                    }} 
+                    mode="profile"
+                />
+            )}
         </div>
     );
 }

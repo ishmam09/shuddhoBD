@@ -3,6 +3,7 @@ import { MapPin, Plus, X, UploadCloud, ShieldCheck, Check, Ban, Edit2, Trash2, F
 import React from 'react';
 import { useLoadScript, GoogleMap, Marker } from "@react-google-maps/api";
 import { useAuth } from '../context/AuthContext';
+import { constituenciesData } from '../data/constituencies';
 
 const API_BASE = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:5001/api`;
 
@@ -18,9 +19,9 @@ export default function Reports() {
 
     // Moderation Edit State
     const [editingReport, setEditingReport] = useState<any>(null);
-    const [modForm, setModForm] = useState({ category: '', severity: '', severityScore: 0 });
+    const [modForm, setModForm] = useState({ category: '', severity: '', severityScore: 0, resolution: 'Unsolved' });
 
-    const [newReport, setNewReport] = useState({ title: '', description: '', location: '' });
+    const [newReport, setNewReport] = useState({ title: '', description: '', location: '', seatId: '' });
     const [images, setImages] = useState<File[]>([]);
     const [imagePreviews, setImagePreviews] = useState<string[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -130,7 +131,8 @@ export default function Reports() {
         setModForm({
             category: report.category || 'Uncategorized',
             severity: report.severity || 'Low',
-            severityScore: report.severityScore || 0
+            severityScore: report.severityScore || 0,
+            resolution: report.resolution || 'Unsolved'
         });
     };
 
@@ -170,6 +172,7 @@ export default function Reports() {
             formData.append("title", newReport.title);
             formData.append("description", newReport.description);
             formData.append("location", newReport.location);
+            formData.append("seatId", newReport.seatId);
             images.forEach(image => {
                 formData.append("images", image);
             });
@@ -182,7 +185,7 @@ export default function Reports() {
 
             if (res.ok) {
                 setSubmitSuccess(true);
-                setNewReport({ title: '', description: '', location: '' });
+                setNewReport({ title: '', description: '', location: '', seatId: '' });
                 clearImages();
                 setTimeout(() => {
                     setIsModalOpen(false);
@@ -397,6 +400,32 @@ export default function Reports() {
                                             <div className="w-full h-px bg-shuddho-border"></div>
 
                                             <div>
+                                                <div className="text-[10px] text-slate-500 uppercase font-bold tracking-widest mb-2">Resolution Progress</div>
+                                                <div className="flex gap-1.5 h-1.5 w-full mb-2">
+                                                    {(['Unsolved', 'Ongoing', 'Solved'] as const).map((step) => (
+                                                        <div 
+                                                            key={step}
+                                                            className={`flex-1 rounded-full transition-all duration-300 ${
+                                                                (selectedReport.resolution || 'Unsolved') === step 
+                                                                    ? step === 'Solved' ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.4)]' :
+                                                                      step === 'Ongoing' ? 'bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.4)]' :
+                                                                      'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.4)]'
+                                                                    : 'bg-slate-800'
+                                                            }`}
+                                                        />
+                                                    ))}
+                                                </div>
+                                                <p className={`text-xs font-black uppercase ${
+                                                    selectedReport.resolution === 'Solved' ? 'text-green-400' :
+                                                    selectedReport.resolution === 'Ongoing' ? 'text-amber-400' : 'text-red-400'
+                                                }`}>
+                                                    {selectedReport.resolution || 'Unsolved'}
+                                                </p>
+                                            </div>
+
+                                            <div className="w-full h-px bg-shuddho-border"></div>
+
+                                            <div>
                                                 <div className="text-[10px] text-slate-500 uppercase font-bold tracking-widest mb-1">Severity Risk</div>
                                                 <div className={`${getSeverityColor(selectedReport.severity)} font-black text-lg flex items-baseline gap-2`}>
                                                     {selectedReport.severity}
@@ -499,6 +528,51 @@ export default function Reports() {
                                 {report.description}
                             </p>
 
+                            {/* Resolution Status Bars (Visible for Verified Reports) */}
+                            {report.status === 'Verified' && (
+                                <div className="mb-6 space-y-2">
+                                    <div className="flex items-center justify-between px-1">
+                                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Resolution Progress</span>
+                                        <span className={`text-[10px] font-black uppercase ${
+                                            report.resolution === 'Solved' ? 'text-green-400' :
+                                            report.resolution === 'Ongoing' ? 'text-amber-400' : 'text-red-400'
+                                        }`}>{report.resolution || 'Unsolved'}</span>
+                                    </div>
+                                    <div className="flex gap-1.5 h-1.5 w-full">
+                                        {(['Unsolved', 'Ongoing', 'Solved'] as const).map((step, idx) => {
+                                            const isActive = (report.resolution || 'Unsolved') === step;
+                                            const isPast = step === 'Unsolved' || 
+                                                           (step === 'Ongoing' && (report.resolution === 'Ongoing' || report.resolution === 'Solved')) ||
+                                                           (step === 'Solved' && report.resolution === 'Solved');
+                                            
+                                            // Determine if this step is "reached" (highlighted or part of the progress)
+                                            // However, the user said "3 small bars... admin can select any of them".
+                                            // This implies more of a radio-toggle style than a progress bar.
+                                            // Let's make them segments that highlight the specific active one.
+                                            
+                                            return (
+                                                <div 
+                                                    key={step}
+                                                    onClick={(e) => {
+                                                        if (user?.role === 'admin') {
+                                                            e.stopPropagation();
+                                                            handleModerate(report._id, { resolution: step });
+                                                        }
+                                                    }}
+                                                    className={`flex-1 rounded-full transition-all duration-300 ${
+                                                        isActive 
+                                                            ? step === 'Solved' ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.4)]' :
+                                                              step === 'Ongoing' ? 'bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.4)]' :
+                                                              'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.4)]'
+                                                            : 'bg-slate-800'
+                                                    } ${user?.role === 'admin' ? 'cursor-pointer hover:opacity-80' : ''}`}
+                                                />
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+
                             <div className="mt-auto space-y-3">
                                 <div className="flex justify-between items-end">
                                     <div className="space-y-1">
@@ -577,6 +651,22 @@ export default function Reports() {
                             </div>
                         ) : (
                             <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto">
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-300 mb-1">Constituency Seat</label>
+                                    <select
+                                        required
+                                        value={newReport.seatId}
+                                        onChange={e => setNewReport({ ...newReport, seatId: e.target.value })}
+                                        className="w-full bg-slate-800 border border-shuddho-border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-shuddho-neon"
+                                    >
+                                        <option value="">Select a Seat</option>
+                                        {constituenciesData.map(seat => (
+                                            <option key={seat.id} value={seat.seatId}>
+                                                Seat #{seat.seatId} - {seat.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
                                 <div>
                                     <label className="block text-sm font-medium text-slate-300 mb-1">Incident Title</label>
                                     <input
@@ -769,6 +859,28 @@ export default function Reports() {
                                     <option value="Power Theft">Power Theft</option>
                                     <option value="Other">Other</option>
                                 </select>
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Resolution Progress</label>
+                                <div className="grid grid-cols-3 gap-2">
+                                    {(['Unsolved', 'Ongoing', 'Solved'] as const).map((res) => (
+                                        <button
+                                            key={res}
+                                            type="button"
+                                            onClick={() => setModForm({ ...modForm, resolution: res })}
+                                            className={`py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${
+                                                modForm.resolution === res
+                                                    ? res === 'Solved' ? 'bg-green-500/20 border-green-500 text-green-400 shadow-[0_0_15px_rgba(34,197,94,0.2)]' :
+                                                      res === 'Ongoing' ? 'bg-amber-500/20 border-amber-500 text-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.2)]' :
+                                                      'bg-red-500/20 border-red-500 text-red-400 shadow-[0_0_15px_rgba(239,68,68,0.2)]'
+                                                    : 'bg-slate-900 border-slate-800 text-slate-500 hover:border-slate-700'
+                                            }`}
+                                        >
+                                            {res}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
 
                             <div>

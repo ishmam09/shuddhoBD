@@ -212,7 +212,6 @@ export const generateConstituencies = () => {
                 representative: {
                     name: `MP of ${p.name}-${i}`,
                     party: party,
-                    photo: `https://i.pravatar.cc/150?u=${currentNo}`,
                     ...extra
                 }
             });
@@ -230,7 +229,6 @@ export const generateConstituencies = () => {
             representative: {
                 name: `MP of Seat-${list.length + 1}`,
                 party: party,
-                photo: `https://i.pravatar.cc/150?u=${list.length + 1}`,
                 ...extra
             }
         });

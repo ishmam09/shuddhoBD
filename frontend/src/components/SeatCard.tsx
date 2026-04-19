@@ -4,9 +4,10 @@ import { useAuth } from "../context/AuthContext";
 interface SeatCardProps {
     seat: any;
     onEdit: (seat: any) => void;
+    onViewGrowth?: (seat: any) => void;
 }
 
-export default function SeatCard({ seat, onEdit }: SeatCardProps) {
+export default function SeatCard({ seat, onEdit, onViewGrowth }: SeatCardProps) {
     const { user } = useAuth();
 
     const resolvedPartyLogo = seat.partyLogo
@@ -59,7 +60,13 @@ export default function SeatCard({ seat, onEdit }: SeatCardProps) {
                     </div>
 
                     <div className="mt-4">
-                        <button className="w-full bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 hover:text-indigo-300 border border-indigo-500/30 transition-all font-bold py-3 px-4 rounded-xl flex justify-center items-center gap-2 group-hover:shadow-[0_0_15px_rgba(99,102,241,0.2)]">
+                        <button 
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onViewGrowth && onViewGrowth(seat);
+                            }}
+                            className="w-full bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 hover:text-indigo-300 border border-indigo-500/30 transition-all font-bold py-3 px-4 rounded-xl flex justify-center items-center gap-2 group-hover:shadow-[0_0_15px_rgba(99,102,241,0.2)]"
+                        >
                             <TrendingUp className="w-4 h-4" />
                             Asset Growth
                         </button>

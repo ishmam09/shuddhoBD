@@ -2,6 +2,7 @@ import { useState, useRef, useMemo } from "react";
 import type { FormEvent, ChangeEvent } from "react";
 import { Shield, MapPin, FileText, Camera, UploadCloud, X, Lock, CheckCircle2, Plus } from "lucide-react";
 import { useLoadScript, GoogleMap, Marker } from "@react-google-maps/api";
+import { constituenciesData } from "../data/constituencies";
 
 const API_BASE = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:5001/api`;
 
@@ -10,6 +11,7 @@ export default function AnonymousReport() {
         title: "",
         description: "",
         location: "",
+        seatId: "",
     });
     const [images, setImages] = useState<File[]>([]);
     const [imagePreviews, setImagePreviews] = useState<string[]>([]);
@@ -67,6 +69,7 @@ export default function AnonymousReport() {
             formData.append("title", form.title);
             formData.append("description", form.description);
             formData.append("location", form.location);
+            formData.append("seatId", form.seatId);
             images.forEach((image) => {
                 formData.append("images", image);
             });
@@ -89,7 +92,7 @@ export default function AnonymousReport() {
             });
 
             // Reset form
-            setForm({ title: "", description: "", location: "" });
+            setForm({ title: "", description: "", location: "", seatId: "" });
             clearImages();
         } catch (err: any) {
             setError(err.message || "Something went wrong.");
@@ -195,6 +198,26 @@ export default function AnonymousReport() {
                         <form onSubmit={handleSubmit} className="space-y-8 relative z-10">
                             {/* Layout chunk 1: Text details */}
                             <div className="space-y-6">
+                                <div>
+                                    <label className="flex items-center gap-2 text-sm font-bold text-indigo-300 mb-2 uppercase tracking-wider">
+                                        Constituency Seat
+                                    </label>
+                                    <select
+                                        name="seatId"
+                                        required
+                                        value={form.seatId}
+                                        onChange={(e) => setForm({ ...form, seatId: e.target.value })}
+                                        className="w-full rounded-2xl border-2 border-slate-700/50 bg-black/40 px-5 py-4 text-white focus:border-indigo-500 focus:bg-slate-800/80 focus:outline-none transition-all"
+                                    >
+                                        <option value="">Select a Seat</option>
+                                        {constituenciesData.map((seat) => (
+                                            <option key={seat.id} value={seat.seatId}>
+                                                Seat #{seat.seatId} - {seat.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
                                 <div>
                                     <label className="flex items-center gap-2 text-sm font-bold text-indigo-300 mb-2 uppercase tracking-wider" htmlFor="title">
                                         <FileText className="w-4 h-4" /> Report Title
