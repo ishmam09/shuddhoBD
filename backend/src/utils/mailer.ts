@@ -1,16 +1,28 @@
 import nodemailer from "nodemailer";
 import { ENV } from "../config/env";
 
-// Create a transporter using Gmail service.
+// Create a transporter using explicit SMTP settings for better control/logging
 const transporter = nodemailer.createTransport({
-  service: "gmail",
+  host: ENV.smtpHost,
+  port: ENV.smtpPort,
+  secure: ENV.smtpPort === 465, // true for 465, false for 587
   auth: {
     user: ENV.smtpUser,
     pass: ENV.smtpPass,
   },
+  tls: {
+    rejectUnauthorized: false // Helps with some local network/firewall issues
+  }
 });
 
-console.log(`[MAILER INFO] Initialized with Service: GMAIL, User: ${ENV.smtpUser}, Pass set: ${!!ENV.smtpPass}`);
+console.log(`[MAILER INFO] Initialized with Host: ${ENV.smtpHost}, Port: ${ENV.smtpPort}, User: ${ENV.smtpUser}`);
+transporter.verify((error, success) => {
+  if (error) {
+    console.error("[MAILER ERROR] Connection failed:", error);
+  } else {
+    console.log("[MAILER INFO] SMTP server is ready to take our messages");
+  }
+});
 
 export const sendOTPVerificationEmail = async (email: string, otp: string) => {
   if (!ENV.smtpUser || !ENV.smtpPass) {

@@ -1,8 +1,8 @@
 import express from 'express';
 import Project from '../models/Project';
 import { authMiddleware, requireRoles, AuthRequest } from '../middleware/auth';
-import { uploadMemory, cloudinary } from '../utils/cloudinary';
-import { Readable } from 'stream';
+import { uploadChallenge, cloudinary } from '../utils/cloudinary';
+// Removed Readable import as it's no longer needed for manual streams
 
 const router = express.Router();
 
@@ -58,6 +58,14 @@ router.put('/:id', authMiddleware, requireRoles('admin'), async (req: AuthReques
     const projectToUpdate = await Project.findById(req.params.id);
     if (!projectToUpdate) return res.status(404).json({ message: 'Project not found' });
 
+    // Sanitize updateData by removing immutable or auto-generated fields
+    delete updateData._id;
+    delete updateData.__v;
+    delete updateData.createdAt;
+    delete updateData.updatedAt;
+
+    console.log(`[PROJECT UPDATE] Attempting to update project ${req.params.id}`);
+    
     // implementing auto-update of phases if total spent is updated directly
     if (updateData.actualCompletion !== undefined && !updateData.phases) {
       const newTotal = Number(updateData.actualCompletion);
@@ -83,11 +91,15 @@ router.put('/:id', authMiddleware, requireRoles('admin'), async (req: AuthReques
       updateData.actualCompletion = updateData.phases.reduce((sum: number, p: any) => sum + (Number(p.spent) || 0), 0);
     }
 
-    const project = await Project.findByIdAndUpdate(req.params.id, updateData, { new: true });
+    const project = await Project.findByIdAndUpdate(req.params.id, updateData, { new: true, runValidators: true });
+    console.log(`[PROJECT UPDATE] Successfully updated project ${req.params.id}`);
     res.json(project);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error updating project' });
+  } catch (error: any) {
+    console.error(`[PROJECT UPDATE ERROR] ID: ${req.params.id}:`, error);
+    res.status(500).json({ 
+      message: 'Server error updating project',
+      error: error.message 
+    });
   }
 });
 
@@ -116,7 +128,7 @@ router.post('/seed', async (req, res) => {
 
     const sampleProjects = [];
     const numProjects = Math.floor(Math.random() * 6) + 10; // 10 to 15 projects
-    
+
     // Pick unique names
     const selectedNames = projectNames.sort(() => 0.5 - Math.random()).slice(0, numProjects);
 
@@ -166,12 +178,13 @@ router.post('/seed', async (req, res) => {
 
         sampleProjects.push({
             projectId: `PRJ-${100 + i}`,
+            seatId: Math.floor(Math.random() * 200) + 100,
             name: selectedNames[i],
             manager: `Manager ${String.fromCharCode(65 + i)}`,
             status: statusPool[Math.floor(Math.random() * statusPool.length)],
             startDate: start,
             endDate: end,
-            location: `Area ${i + 1}, Dhaka`,
+            location: `Area ${i + i}, Dhaka`,
             budget,
             actualCompletion: totalSpent,
             milestone: `Milestone ${Math.floor(Math.random() * 5) + 1} reached`,
@@ -189,62 +202,46 @@ router.post('/seed', async (req, res) => {
 
 // POST a challenge for a project (Citizen/Public Anonymous via authMiddleware)
 // @ts-ignore
-router.post('/:id/challenge', authMiddleware, uploadMemory.array('media', 5), async (req: AuthRequest, res: express.Response) => {
+router.post('/:id/challenge', authMiddleware, uploadChallenge.array('media', 5), async (req: AuthRequest, res: express.Response) => {
   try {
     const { description } = req.body;
     if (!description) {
       return res.status(400).json({ message: 'Challenge description is required' });
     }
 
-    const mediaUrls: string[] = [];
-    const files = req.files as Express.Multer.File[];
-
-    if (files && files.length > 0) {
-      const uploadPromises = files.map(file => {
-        return new Promise<string>((resolve, reject) => {
-          const uploadStream = cloudinary.uploader.upload_stream(
-            {
-              folder: 'shuddhoBD/project_challenges',
-              resource_type: 'auto',
-              quality: 'auto',
-              fetch_format: 'auto'
-            },
-            (error, result) => {
-              if (error) reject(error);
-              else resolve((result as any).secure_url);
-            }
-          );
-          Readable.from(file.buffer).pipe(uploadStream);
-        });
-      });
-
-      try {
-        const results = await Promise.all(uploadPromises);
-        mediaUrls.push(...results);
-      } catch (uploadErr: any) {
-        console.error("Cloudinary Upload Process Failed:", uploadErr);
-        throw new Error(`Cloudinary media upload failed: ${uploadErr.message}`);
-      }
-    }
+    // With uploadChallenge, files are already uploaded to Cloudinary by the middleware
+    const files = req.files as any[];
+    const mediaUrls = files ? files.map(file => file.path || file.secure_url) : [];
 
     const project = await Project.findById(req.params.id);
     if (!project) return res.status(404).json({ message: 'Project not found' });
 
+    console.log(`[CHALLENGE SUBMISSION] Adding challenge to project: ${project.name} (${project._id})`);
+
     const newChallenge = {
       description,
-      mediaUrls,
+      mediaUrls: mediaUrls.filter(url => !!url), // Ensure no null/undefined urls
       status: 'pending',
       adminNote: '',
       createdAt: new Date()
     };
 
+    if (!project.challenges) {
+      project.challenges = [] as any;
+    }
+
     project.challenges.push(newChallenge as any);
     await project.save();
+    console.log(`[CHALLENGE SUBMISSION] Successfully saved challenge for project: ${project._id}`);
 
     res.status(201).json({ message: 'Challenge submitted successfully', project });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error submitting challenge' });
+  } catch (error: any) {
+    console.error("[CHALLENGE SUBMISSION ERROR]", error);
+    res.status(500).json({ 
+      message: 'Server error submitting challenge',
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 });
 

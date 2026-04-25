@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import { ENV } from "../config/env";
+import mongoose from "mongoose";
 import { User, IUser, UserRole } from "../models/User";
 
 export interface AuthRequest extends Request {

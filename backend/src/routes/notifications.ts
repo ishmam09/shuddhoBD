@@ -1,4 +1,5 @@
 import express from 'express';
+import mongoose from 'mongoose';
 import Notification from '../models/Notification';
 import User from '../models/User';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
@@ -12,17 +13,29 @@ router.get('/', authMiddleware, async (req: AuthRequest, res: express.Response) 
         const userId = req.user?._id;
         const role = (req.user as any).role;
 
-        let query: any = { recipient: userId };
+        console.log(`[DEBUG_NOTIF] Fetch Request - UserID: ${userId}, Role: ${role}`);
+
+        const orConditions: any[] = [];
         
-        // Admins also see global admin notifications
-        if (role === 'admin') {
-            query = {
-                $or: [
-                    { recipient: userId },
-                    { recipient: null } // Global admin notifications
-                ]
-            };
+        // 1. Role-based notifications (Broadcasting)
+        if (role) {
+            orConditions.push({ recipientRole: role });
         }
+
+        // 2. Personal notifications (Recipient-specific)
+        // Check if userId is a valid MongoDB ObjectId to prevent CastError
+        if (userId && mongoose.Types.ObjectId.isValid(userId.toString())) {
+            orConditions.push({ recipient: userId });
+        }
+
+        // 3. Global notifications (Legacy)
+        if (role === 'admin') {
+            orConditions.push({ recipient: null });
+        }
+
+        // Ensure we always have at least one condition to avoid empty $or
+        // If no conditions match, we query for a random non-existent ObjectId to safely return 0 results
+        const query = orConditions.length > 0 ? { $or: orConditions } : { _id: new mongoose.Types.ObjectId() };
 
         const notifications = await Notification.find(query).sort({ createdAt: -1 }).limit(50);
         res.json(notifications);
@@ -63,15 +76,14 @@ router.patch('/read-all', authMiddleware, async (req: AuthRequest, res: express.
         const userId = req.user?._id;
         const role = (req.user as any).role;
 
-        let query: any = { recipient: userId };
-        if (role === 'admin') {
-            query = {
-                $or: [
-                    { recipient: userId },
-                    { recipient: null }
-                ]
-            };
+        const orConditions: any[] = [];
+        if (role) orConditions.push({ recipientRole: role });
+        if (userId && mongoose.Types.ObjectId.isValid(userId.toString())) {
+            orConditions.push({ recipient: userId });
         }
+        if (role === 'admin') orConditions.push({ recipient: null });
+
+        const query = orConditions.length > 0 ? { $or: orConditions } : { _id: new mongoose.Types.ObjectId() };
 
         await Notification.updateMany(query, { isRead: true });
         res.json({ message: 'All notifications marked as read' });

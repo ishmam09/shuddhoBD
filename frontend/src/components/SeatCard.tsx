@@ -29,7 +29,11 @@ export default function SeatCard({ seat, onEdit, onViewGrowth }: SeatCardProps) 
                 </div>
                 {seat.candidateImage && (
                     <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-indigo-500/50 shrink-0 ml-4 shadow-lg shadow-indigo-500/20">
-                        <img src={seat.candidateImage} alt={seat.mpName} className="w-full h-full object-cover" />
+                        <img 
+                            src={seat.candidateImage.startsWith('http') ? seat.candidateImage : `${import.meta.env.VITE_SERVER_URL || "http://localhost:5001"}${seat.candidateImage}`} 
+                            alt={seat.mpName} 
+                            className="w-full h-full object-cover" 
+                        />
                     </div>
                 )}
             </div>

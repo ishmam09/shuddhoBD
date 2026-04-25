@@ -1,30 +1,26 @@
-import { useState, useEffect, useRef } from 'react';
-import { MapPin, Plus, X, UploadCloud, ShieldCheck, Check, Ban, Edit2, Trash2, FileText } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { MapPin, Plus, X, ShieldCheck, Check, Ban, Edit2, Trash2, FileText } from 'lucide-react';
 import React from 'react';
 import { useLoadScript, GoogleMap, Marker } from "@react-google-maps/api";
 import { useAuth } from '../context/AuthContext';
-import { constituenciesData } from '../data/constituencies';
+
 
 const API_BASE = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:5001/api`;
 
 export default function Reports() {
+    const navigate = useNavigate();
     const { user } = useAuth();
     const [reports, setReports] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [submitting, setSubmitting] = useState(false);
-    const [isModalOpen, setIsModalOpen] = useState(false);
     const [isModerationMode, setIsModerationMode] = useState(false);
-    const [submitSuccess, setSubmitSuccess] = useState(false);
     const [pendingCount, setPendingCount] = useState(0);
 
     // Moderation Edit State
     const [editingReport, setEditingReport] = useState<any>(null);
     const [modForm, setModForm] = useState({ category: '', severity: '', severityScore: 0, resolution: 'Unsolved' });
 
-    const [newReport, setNewReport] = useState({ title: '', description: '', location: '', seatId: '' });
-    const [images, setImages] = useState<File[]>([]);
-    const [imagePreviews, setImagePreviews] = useState<string[]>([]);
-    const fileInputRef = useRef<HTMLInputElement>(null);
+
 
     // Detailed View State
     const [selectedReport, setSelectedReport] = useState<any>(null);
@@ -136,69 +132,7 @@ export default function Reports() {
         });
     };
 
-    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const files = Array.from(e.target.files || []);
-        if (images.length + files.length > 5) {
-            alert("You can only upload up to 5 files.");
-            return;
-        }
 
-        const newImages = [...images, ...files].slice(0, 5);
-        setImages(newImages);
-
-        const newPreviews = files.map(file => URL.createObjectURL(file));
-        setImagePreviews([...imagePreviews, ...newPreviews].slice(0, 5));
-
-        if (fileInputRef.current) {
-            fileInputRef.current.value = "";
-        }
-    };
-
-    const clearImages = () => {
-        setImages([]);
-        // Clean up object URLs to prevent memory leaks
-        imagePreviews.forEach(url => URL.revokeObjectURL(url));
-        setImagePreviews([]);
-        if (fileInputRef.current) {
-            fileInputRef.current.value = "";
-        }
-    };
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setSubmitting(true);
-        try {
-            const formData = new FormData();
-            formData.append("title", newReport.title);
-            formData.append("description", newReport.description);
-            formData.append("location", newReport.location);
-            formData.append("seatId", newReport.seatId);
-            images.forEach(image => {
-                formData.append("images", image);
-            });
-
-            const res = await fetch(`${API_BASE}/reports`, {
-                method: 'POST',
-                credentials: 'include',
-                body: formData
-            });
-
-            if (res.ok) {
-                setSubmitSuccess(true);
-                setNewReport({ title: '', description: '', location: '', seatId: '' });
-                clearImages();
-                setTimeout(() => {
-                    setIsModalOpen(false);
-                    setSubmitSuccess(false);
-                    fetchReports();
-                }, 3000);
-            }
-        } catch (error) {
-            console.error('Submit failed', error);
-        } finally {
-            setSubmitting(false);
-        }
-    };
 
     const getSeverityColor = (severity: string) => {
         if (severity === 'High') return 'text-shuddho-red';
@@ -286,7 +220,7 @@ export default function Reports() {
                 )}
 
                 <button
-                    onClick={() => setIsModalOpen(true)}
+                    onClick={() => navigate('/dashboard/anonymous-report')}
                     className="bg-shuddho-neon text-black font-semibold rounded-xl px-6 py-3 w-full md:w-auto text-sm hover:brightness-110 transition-all flex items-center justify-center gap-2"
                 >
                     <Plus className="w-5 h-5" /> New Report
@@ -626,207 +560,6 @@ export default function Reports() {
                 </div>
             )}
 
-            {/* Modal */}
-            {isModalOpen && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-shuddho-bg border border-shuddho-border rounded-2xl w-full max-w-lg overflow-hidden max-h-[90vh] flex flex-col">
-                        <div className="flex justify-between items-center p-6 border-b border-shuddho-border shrink-0">
-                            <h2 className="text-xl font-bold text-white">Submit New Report</h2>
-                            <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-white transition-colors">
-                                <X className="w-6 h-6" />
-                            </button>
-                        </div>
-                        {submitSuccess ? (
-                            <div className="flex flex-col items-center justify-center py-10 text-center animate-in fade-in zoom-in duration-300">
-                                <div className="w-16 h-16 bg-shuddho-neon/20 text-shuddho-neon rounded-full flex items-center justify-center mb-4 border border-shuddho-neon/30">
-                                    <Check className="w-10 h-10" />
-                                </div>
-                                <h3 className="text-xl font-bold text-white mb-2">Report Submitted!</h3>
-                                <p className="text-slate-400 text-xs max-w-[280px] mx-auto leading-relaxed">
-                                    Your report has been successfully uploaded to Cloudinary and processed by our AI system. It is currently <span className="text-shuddho-orange font-bold">Pending Verification</span> by an administrator.
-                                </p>
-                                <p className="text-[10px] text-slate-500 mt-6 animate-pulse italic">
-                                    Modal will close automatically...
-                                </p>
-                            </div>
-                        ) : (
-                            <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto">
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-300 mb-1">Constituency Seat</label>
-                                    <select
-                                        required
-                                        value={newReport.seatId}
-                                        onChange={e => setNewReport({ ...newReport, seatId: e.target.value })}
-                                        className="w-full bg-slate-800 border border-shuddho-border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-shuddho-neon"
-                                    >
-                                        <option value="">Select a Seat</option>
-                                        {constituenciesData.map(seat => (
-                                            <option key={seat.id} value={seat.seatId}>
-                                                Seat #{seat.seatId} - {seat.name}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-300 mb-1">Incident Title</label>
-                                    <input
-                                        required
-                                        type="text"
-                                        value={newReport.title}
-                                        onChange={e => setNewReport({ ...newReport, title: e.target.value })}
-                                        className="w-full bg-shuddho-card border border-shuddho-border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-shuddho-neon"
-                                        placeholder="e.g. Broken road construction paused"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-300 mb-1">Description</label>
-                                    <textarea
-                                        required
-                                        rows={4}
-                                        value={newReport.description}
-                                        onChange={e => setNewReport({ ...newReport, description: e.target.value })}
-                                        className="w-full bg-shuddho-card border border-shuddho-border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-shuddho-neon resize-none"
-                                        placeholder="Include detailed keywords (e.g. bribe, missing equipment, contractor...)"
-                                    ></textarea>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-300 mb-1">Location</label>
-                                    <input
-                                        required
-                                        type="text"
-                                        value={newReport.location}
-                                        onChange={e => setNewReport({ ...newReport, location: e.target.value })}
-                                        className="w-full bg-shuddho-card border border-shuddho-border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-shuddho-neon mb-3"
-                                        placeholder="e.g. Mirpur 1 (or tap map below)"
-                                    />
-                                    {isLoaded && import.meta.env.VITE_GOOGLE_MAPS_API_KEY && (
-                                        <div className="w-full h-40 rounded-lg overflow-hidden border border-shuddho-border">
-                                            <GoogleMap
-                                                zoom={6}
-                                                center={mapCenter}
-                                                mapContainerStyle={{ width: "100%", height: "100%" }}
-                                                onClick={(e) => {
-                                                    const lat = e.latLng?.lat();
-                                                    const lng = e.latLng?.lng();
-                                                    if (lat && lng) setNewReport({ ...newReport, location: `${lat.toFixed(5)}, ${lng.toFixed(5)}` });
-                                                }}
-                                                options={{
-                                                    streetViewControl: false,
-                                                    mapTypeControl: false,
-                                                    restriction: {
-                                                        latLngBounds: { north: 26.6345, south: 20.7384, west: 88.0086, east: 92.6737 },
-                                                        strictBounds: false,
-                                                    },
-                                                    minZoom: 6
-                                                }}
-                                            >
-                                                {newReport.location.match(/^-?\d+(\.\d+)?,\s*-?\d+(\.\d+)?$/) && (
-                                                    <Marker position={{ lat: parseFloat(newReport.location.split(',')[0]), lng: parseFloat(newReport.location.split(',')[1]) }} />
-                                                )}
-                                            </GoogleMap>
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* Media Upload UI */}
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-300 mb-2">Evidence Files (Max 5, Image/Video)</label>
-                                    <div className="mt-1">
-                                        {imagePreviews.length > 0 ? (
-                                            <div className="space-y-4">
-                                                <div className="flex flex-wrap gap-3">
-                                                    {imagePreviews.map((url, index) => {
-                                                        const isVideo = images[index]?.type.startsWith('video/');
-                                                        return (
-                                                            <div key={index} className="relative rounded-xl overflow-hidden border border-shuddho-border shadow-lg group w-24 h-24">
-                                                                {isVideo ? (
-                                                                    <video src={url} className="w-full h-full object-cover" />
-                                                                ) : (
-                                                                    <img src={url} alt={`Preview ${index}`} className="w-full h-full object-cover" />
-                                                                )}
-                                                                <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={(e) => {
-                                                                            e.stopPropagation();
-                                                                            const newImages = [...images];
-                                                                            newImages.splice(index, 1);
-                                                                            setImages(newImages);
-
-                                                                            const newPreviews = [...imagePreviews];
-                                                                            URL.revokeObjectURL(newPreviews[index]);
-                                                                            newPreviews.splice(index, 1);
-                                                                            setImagePreviews(newPreviews);
-                                                                        }}
-                                                                        className="bg-red-500/80 text-white rounded-full p-1.5 hover:bg-red-500 transition-colors shadow-lg"
-                                                                        title="Remove item"
-                                                                    >
-                                                                        <X className="w-4 h-4" />
-                                                                    </button>
-                                                                </div>
-                                                            </div>
-                                                        );
-                                                    })}
-                                                    {imagePreviews.length < 5 && (
-                                                        <div
-                                                            onClick={() => fileInputRef.current?.click()}
-                                                            className="w-24 h-24 rounded-xl border-2 border-dashed border-slate-600 hover:border-shuddho-neon hover:bg-shuddho-neon/5 transition-all flex flex-col items-center justify-center cursor-pointer text-slate-400 group"
-                                                        >
-                                                            <Plus className="w-6 h-6 group-hover:text-shuddho-neon transition-colors" />
-                                                            <span className="text-[10px] mt-1 font-medium group-hover:text-shuddho-neon">Add More</span>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                                <button
-                                                    type="button"
-                                                    onClick={clearImages}
-                                                    className="px-4 py-2 border border-red-500/30 text-red-500 hover:bg-red-500/10 rounded-lg text-sm font-medium transition-colors w-full flex items-center justify-center gap-2"
-                                                >
-                                                    <X className="w-4 h-4" /> Remove Media
-                                                </button>
-                                            </div>
-                                        ) : (
-                                            <div
-                                                onClick={() => fileInputRef.current?.click()}
-                                                className="cursor-pointer flex flex-col items-center justify-center w-full h-32 border border-slate-700 border-dashed rounded-xl hover:bg-slate-800/20 hover:border-shuddho-neon/40 transition-all group"
-                                            >
-                                                <UploadCloud className="w-8 h-8 text-slate-500 mb-2 group-hover:text-shuddho-neon transition-colors" />
-                                                <p className="text-xs text-slate-500 font-medium group-hover:text-slate-300">Add Photo/Video Evidence</p>
-                                                <p className="text-[10px] text-slate-600 mt-1">Powered by Cloudinary (Max 5 Files)</p>
-                                            </div>
-                                        )}
-                                        <input
-                                            type="file"
-                                            ref={fileInputRef}
-                                            onChange={handleImageChange}
-                                            accept="image/*,video/*"
-                                            multiple
-                                            className="hidden"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3 flex items-start gap-3 mt-4">
-                                    <div className="p-1 bg-blue-500/20 rounded-md">
-                                        <UploadCloud className="w-4 h-4 text-blue-400" />
-                                    </div>
-                                    <p className="text-xs text-slate-400 leading-relaxed">
-                                        <span className="text-blue-400 font-medium">Cloud Storage:</span> All evidence images are securely uploaded to Cloudinary for AI analysis and permanent storage.
-                                    </p>
-                                </div>
-
-                                <button
-                                    type="submit"
-                                    disabled={submitting}
-                                    className="w-full bg-shuddho-neon text-black font-bold rounded-lg px-4 py-3 mt-2 hover:brightness-110 transition-all disabled:opacity-50 disabled:grayscale"
-                                >
-                                    {submitting ? 'Analyzing & Uploading...' : 'Submit Report for AI Analysis'}
-                                </button>
-                            </form>
-                        )}
-                    </div>
-                </div>
-            )}
             {/* Moderation Edit Modal */}
             {editingReport && (
                 <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[60] flex items-center justify-center p-4">

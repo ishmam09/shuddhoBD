@@ -1,6 +1,6 @@
-import { useState, useRef, useMemo } from "react";
+import { useState, useRef, useMemo, useEffect } from "react";
 import type { FormEvent, ChangeEvent } from "react";
-import { Shield, MapPin, FileText, Camera, UploadCloud, X, Lock, CheckCircle2, Plus } from "lucide-react";
+import { Shield, MapPin, FileText, Camera, UploadCloud, X, Lock, CheckCircle2, Plus, Search, ChevronDown } from "lucide-react";
 import { useLoadScript, GoogleMap, Marker } from "@react-google-maps/api";
 import { constituenciesData } from "../data/constituencies";
 
@@ -18,6 +18,35 @@ export default function AnonymousReport() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [successData, setSuccessData] = useState<{ trackingId: string; message: string } | null>(null);
+
+    // Searchable Seat Dropdown States
+    const [isSeatDropdownOpen, setIsSeatDropdownOpen] = useState(false);
+    const [seatSearch, setSeatSearch] = useState("");
+    const dropdownRef = useRef<HTMLDivElement>(null);
+
+    const filteredSeats = useMemo(() => {
+        if (!seatSearch) return constituenciesData;
+        const query = seatSearch.toLowerCase();
+        return constituenciesData.filter(s => 
+            s.name.toLowerCase().includes(query) || 
+            s.seatId.toString().includes(query)
+        );
+    }, [seatSearch]);
+
+    const selectedSeat = useMemo(() => 
+        constituenciesData.find(s => s.seatId.toString() === form.seatId),
+    [form.seatId]);
+
+    // Close dropdown on click outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setIsSeatDropdownOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
 
     const { isLoaded } = useLoadScript({
         googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "",
@@ -198,24 +227,75 @@ export default function AnonymousReport() {
                         <form onSubmit={handleSubmit} className="space-y-8 relative z-10">
                             {/* Layout chunk 1: Text details */}
                             <div className="space-y-6">
-                                <div>
+                                <div className="relative" ref={dropdownRef}>
                                     <label className="flex items-center gap-2 text-sm font-bold text-indigo-300 mb-2 uppercase tracking-wider">
                                         Constituency Seat
                                     </label>
-                                    <select
-                                        name="seatId"
-                                        required
-                                        value={form.seatId}
-                                        onChange={(e) => setForm({ ...form, seatId: e.target.value })}
-                                        className="w-full rounded-2xl border-2 border-slate-700/50 bg-black/40 px-5 py-4 text-white focus:border-indigo-500 focus:bg-slate-800/80 focus:outline-none transition-all"
+                                    
+                                    <div 
+                                        onClick={() => setIsSeatDropdownOpen(!isSeatDropdownOpen)}
+                                        className={`w-full rounded-2xl border-2 px-5 py-4 cursor-pointer flex items-center justify-between transition-all ${
+                                            isSeatDropdownOpen ? 'border-indigo-500 bg-slate-800/80 shadow-[0_0_15px_rgba(99,102,241,0.2)]' : 'border-slate-700/50 bg-black/40 hover:border-slate-600'
+                                        }`}
                                     >
-                                        <option value="">Select a Seat</option>
-                                        {constituenciesData.map((seat) => (
-                                            <option key={seat.id} value={seat.seatId}>
-                                                Seat #{seat.seatId} - {seat.name}
-                                            </option>
-                                        ))}
-                                    </select>
+                                        <div className="flex items-center gap-3">
+                                            {selectedSeat ? (
+                                                <>
+                                                    <span className="text-xs font-black px-2 py-1 bg-indigo-500/20 text-indigo-400 rounded-md">Seat #{selectedSeat.seatId}</span>
+                                                    <span className="text-white font-bold">{selectedSeat.name}</span>
+                                                </>
+                                            ) : (
+                                                <span className="text-slate-500">Select a Constituency...</span>
+                                            )}
+                                        </div>
+                                        <ChevronDown className={`w-5 h-5 text-slate-500 transition-transform duration-300 ${isSeatDropdownOpen ? 'rotate-180' : ''}`} />
+                                    </div>
+
+                                    {isSeatDropdownOpen && (
+                                        <div className="absolute top-full left-0 right-0 mt-3 bg-slate-900 border border-slate-700/50 rounded-2xl shadow-2xl z-[100] overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                                            <div className="p-4 border-b border-slate-800 bg-black/20">
+                                                <div className="relative">
+                                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                                                    <input 
+                                                        autoFocus
+                                                        type="text"
+                                                        placeholder="Search by name or seat number..."
+                                                        value={seatSearch}
+                                                        onChange={(e) => setSeatSearch(e.target.value)}
+                                                        className="w-full bg-slate-800/50 border border-slate-700 rounded-xl pl-10 pr-4 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 transition-all"
+                                                        onClick={(e) => e.stopPropagation()}
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
+                                                {filteredSeats.length > 0 ? (
+                                                    filteredSeats.map((seat) => (
+                                                        <div 
+                                                            key={seat.id}
+                                                            onClick={() => {
+                                                                setForm({ ...form, seatId: seat.seatId.toString() });
+                                                                setIsSeatDropdownOpen(false);
+                                                                setSeatSearch("");
+                                                            }}
+                                                            className={`px-5 py-3 hover:bg-indigo-500/10 cursor-pointer flex items-center justify-between group transition-colors ${form.seatId === seat.seatId.toString() ? 'bg-indigo-500/5' : ''}`}
+                                                        >
+                                                            <div className="flex items-center gap-3">
+                                                                <span className="text-[10px] font-black text-slate-500 group-hover:text-indigo-400">#{seat.seatId}</span>
+                                                                <span className={`text-sm font-bold ${form.seatId === seat.seatId.toString() ? 'text-indigo-400' : 'text-slate-300 group-hover:text-white'}`}>{seat.name}</span>
+                                                            </div>
+                                                            {form.seatId === seat.seatId.toString() && (
+                                                                <div className="w-2 h-2 rounded-full bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.5)]"></div>
+                                                            )}
+                                                        </div>
+                                                    ))
+                                                ) : (
+                                                    <div className="p-10 text-center text-slate-500 text-xs italic">
+                                                        No constituencies found for "{seatSearch}"
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div>

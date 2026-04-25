@@ -52,7 +52,6 @@ export default function ProjectStatus() {
   const [isChallengeModalOpen, setIsChallengeModalOpen] = useState(false);
   const [isAdminReviewModalOpen, setIsAdminReviewModalOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [isUpdateSpentModalOpen, setIsUpdateSpentModalOpen] = useState(false);
 
   const fetchProjects = async () => {
     try {
@@ -239,12 +238,6 @@ export default function ProjectStatus() {
                 {user?.role === 'admin' ? (
                   <div className="flex flex-1 gap-2">
                     <button 
-                      onClick={() => setIsUpdateSpentModalOpen(true)}
-                      className="btn-primary bg-emerald-600 hover:bg-emerald-500 shadow-emerald-600/30 flex-1 justify-center py-2.5 rounded-xl text-sm"
-                    >
-                      Update Spent
-                    </button>
-                    <button 
                       onClick={() => setIsAdminReviewModalOpen(true)}
                       className="btn-primary bg-indigo-600 hover:bg-indigo-500 shadow-indigo-600/30 flex-1 justify-center py-2.5 rounded-xl text-sm"
                     >
@@ -344,14 +337,6 @@ export default function ProjectStatus() {
           />
       )}
 
-      {/* Update Spent Modal */}
-      {isUpdateSpentModalOpen && selectedProject && (
-          <UpdateProgressModal 
-              project={selectedProject}
-              onClose={() => setIsUpdateSpentModalOpen(false)}
-              onSuccess={() => { fetchProjects(); }}
-          />
-      )}
     </div>
   );
 }

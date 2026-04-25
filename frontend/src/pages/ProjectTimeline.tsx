@@ -47,9 +47,13 @@ export default function ProjectTimeline() {
             if (res.ok) {
                 setIsEdit(false);
                 fetchProject();
+            } else {
+                const data = await res.json();
+                alert(`Error: ${data.message || 'Failed to save changes'}`);
             }
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
+            alert(`Network Error: ${err.message || 'Could not connect to the server'}`);
         }
     };
 

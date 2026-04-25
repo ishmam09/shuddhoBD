@@ -28,10 +28,13 @@ export default function NotificationCenter() {
             });
             if (res.ok) {
                 const data = await res.json();
+                console.log(`[NOTIF] Received ${data.length} notifications:`, data.map((n: any) => n.title));
                 setNotifications(data);
+            } else {
+                console.error(`Failed to fetch notifications: ${res.status} ${res.statusText}`);
             }
         } catch (err) {
-            console.error('Failed to fetch notifications', err);
+            console.error('Network error fetching notifications', err);
         }
     };
 
@@ -67,7 +70,10 @@ export default function NotificationCenter() {
 
     useEffect(() => {
         fetchNotifications();
-        const interval = setInterval(fetchNotifications, 30000);
+        const interval = setInterval(() => {
+            console.log('[NOTIF] Polling for new notifications...');
+            fetchNotifications();
+        }, 15000);
         return () => clearInterval(interval);
     }, []);
 

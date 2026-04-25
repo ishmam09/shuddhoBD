@@ -19,7 +19,8 @@ export default function CreateProjectModal({ onClose, onSuccess }: CreateProject
     location: '',
     budget: '',
     actualCompletion: '0',
-    milestone: 'Project Initialized'
+    milestone: 'Project Initialized',
+    seatId: '185'
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -35,26 +36,47 @@ export default function CreateProjectModal({ onClose, onSuccess }: CreateProject
 
     try {
       // Basic validation
-      if (!formData.projectId || !formData.name || !formData.manager || !formData.startDate || !formData.endDate || !formData.budget) {
-        throw new Error("Please fill in all required fields.");
+      if (!formData.projectId || !formData.name || !formData.manager || !formData.startDate || !formData.endDate || !formData.budget || !formData.seatId) {
+        throw new Error("Please fill in all required fields (including Seat ID).");
       }
+
+      // Define 4 default phases
+      const start = new Date(formData.startDate);
+      const end = new Date(formData.endDate);
+      const duration = end.getTime() - start.getTime();
+
+      const phaseTemplates = [
+        { name: "Design & Planning", weight: 0.15 },
+        { name: "Foundation & Dev", weight: 0.45 },
+        { name: "Testing & QA", weight: 0.25 },
+        { name: "Final Deployment", weight: 0.15 }
+      ];
+
+      let accumulatedTime = start.getTime();
+      const phases = phaseTemplates.map((p, idx) => {
+        const pStart = new Date(accumulatedTime);
+        const pEnd = new Date(accumulatedTime + (duration * p.weight));
+        accumulatedTime = pEnd.getTime();
+
+        return {
+          name: p.name,
+          start: pStart,
+          end: pEnd,
+          status: idx === 0 ? 'current' : 'future',
+          spent: 0
+        };
+      });
 
       const body = {
         ...formData,
         budget: Number(formData.budget),
         actualCompletion: Number(formData.actualCompletion),
-        phases: [
-            {
-                name: "Initial Phase",
-                start: formData.startDate,
-                end: formData.endDate,
-                status: 'current',
-                spent: Number(formData.actualCompletion)
-            }
-        ]
+        seatId: Number(formData.seatId),
+        phases: phases
       };
 
       const res = await fetch(`${API_BASE}/projects`, {
+
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
@@ -111,6 +133,21 @@ export default function CreateProjectModal({ onClose, onSuccess }: CreateProject
                 name="projectId"
                 placeholder="e.g. PRJ-105"
                 value={formData.projectId}
+                onChange={handleChange}
+                className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-white outline-none focus:border-shuddho-neon transition-colors"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                <Flag className="w-3 h-3" /> Seat ID
+              </label>
+              <input
+                type="number"
+                name="seatId"
+                placeholder="e.g. 185"
+                value={formData.seatId}
                 onChange={handleChange}
                 className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-white outline-none focus:border-shuddho-neon transition-colors"
                 required

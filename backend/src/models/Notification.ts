@@ -4,7 +4,12 @@ const NotificationSchema = new mongoose.Schema({
     recipient: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
-        required: false // If null, it's for all admins
+        required: false // If null, it's for all users of recipientRole
+    },
+    recipientRole: {
+        type: String,
+        enum: ['admin', 'analyst', 'citizen'],
+        required: false
     },
     title: {
         type: String,

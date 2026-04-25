@@ -230,6 +230,36 @@ export default function AdminSeatModal({ seat, onClose, onSaved, mode = 'assets'
                             <input name="party" required value={form.party} onChange={handleChange} className="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all font-medium" placeholder="e.g. Independent" />
                         </div>
 
+                        <div className="space-y-2 mt-4 pt-6 border-t border-slate-700/50">
+                            <label className="text-xs font-bold uppercase tracking-wider text-slate-400 flex justify-between items-center mb-2">
+                                <span>Candidate Photo</span>
+                                <span className="text-[10px] text-slate-500 lowercase font-normal">(Optional)</span>
+                            </label>
+                            
+                            <div className="flex items-center gap-6 p-4 bg-slate-800/30 rounded-2xl border border-slate-700/50">
+                                <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-slate-700 bg-slate-900 flex-shrink-0">
+                                    {(imageFile || seat?.candidateImage) ? (
+                                        <img 
+                                            src={imageFile ? URL.createObjectURL(imageFile) : (seat.candidateImage.startsWith('http') ? seat.candidateImage : `${import.meta.env.VITE_SERVER_URL || "http://localhost:5001"}${seat.candidateImage}`)} 
+                                            alt="Preview" 
+                                            className="w-full h-full object-cover" 
+                                        />
+                                    ) : (
+                                        <div className="w-full h-full flex items-center justify-center text-slate-600 text-xs">No Photo</div>
+                                    )}
+                                </div>
+                                <div className="flex-1">
+                                    <input 
+                                        type="file" 
+                                        accept="image/*" 
+                                        onChange={(e) => setImageFile(e.target.files?.[0] || null)} 
+                                        className="w-full text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-indigo-500/10 file:text-indigo-400 hover:file:bg-indigo-500/20 file:transition-colors file:cursor-pointer" 
+                                    />
+                                    <p className="text-[10px] text-slate-500 mt-2">Upload a professional portrait (JPG, PNG). Max 5MB.</p>
+                                </div>
+                            </div>
+                        </div>
+
                         {mode === 'assets' && (
                             <>
                                 <div className="grid grid-cols-2 gap-4">
@@ -259,14 +289,6 @@ export default function AdminSeatModal({ seat, onClose, onSaved, mode = 'assets'
                                             </div>
                                         ))}
                                     </div>
-                                </div>
-
-                                <div className="space-y-2 mt-4">
-                                    <label className="text-xs font-bold uppercase tracking-wider text-slate-400 flex justify-between">
-                                        <span>Candidate Photo</span>
-                                        <span className="text-[10px] text-slate-500 lowercase font-normal">(Optional)</span>
-                                    </label>
-                                    <input type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files?.[0] || null)} className="w-full text-sm text-slate-400 file:mr-4 file:py-3 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-indigo-500/10 file:text-indigo-400 hover:file:bg-indigo-500/20 file:transition-colors file:cursor-pointer bg-slate-800/50 border border-slate-700 rounded-xl relative z-10" />
                                 </div>
                             </>
                         )}

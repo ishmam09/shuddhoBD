@@ -28,10 +28,19 @@ export const reportStorage = new CloudinaryStorage({
     params: async (req, file) => {
         return {
             folder: 'shuddhoBD/reports',
-            // Increase the list of formats or use auto
-            allowed_formats: ['jpg', 'png', 'jpeg', 'mp4', 'mov', 'pdf'],
-            transformation: [{ quality: 'auto', fetch_format: 'auto' }],
             resource_type: 'auto',
+            transformation: [{ quality: 'auto', fetch_format: 'auto' }],
+        };
+    },
+});
+
+export const challengeStorage = new CloudinaryStorage({
+    cloudinary: cloudinary,
+    params: async (req, file) => {
+        return {
+            folder: 'shuddhoBD/project_challenges',
+            resource_type: 'auto',
+            transformation: [{ quality: 'auto', fetch_format: 'auto' }],
         };
     },
 });
@@ -43,7 +52,12 @@ export const uploadProfile = multer({
 
 export const uploadReport = multer({
     storage: reportStorage,
-    limits: { fileSize: 50 * 1024 * 1024 } // 50MB limit
+    limits: { fileSize: 50 * 1024 * 1024 }
+});
+
+export const uploadChallenge = multer({
+    storage: challengeStorage,
+    limits: { fileSize: 50 * 1024 * 1024 }
 });
 
 export const uploadMemory = multer({

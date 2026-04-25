@@ -1,8 +1,8 @@
 import express from 'express';
 import Report from '../models/Report';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
-import { uploadMemory, cloudinary } from '../utils/cloudinary';
-import { Readable } from 'stream';
+import { uploadReport, cloudinary } from '../utils/cloudinary';
+// Removed Readable import as it's no longer needed for manual streams
 import crypto from 'crypto';
 import Notification from '../models/Notification';
 
@@ -31,8 +31,10 @@ const CATEGORY_RULES = [
 ];
 
 // Helper to analyze text and determine category and severity
-const analyzeReport = (text: string) => {
-    const lowerText = text.toLowerCase();
+const analyzeReport = (title: string, description: string) => {
+    const lowerTitle = title.toLowerCase();
+    const lowerDesc = description.toLowerCase();
+    const lowerCombined = `${lowerTitle} ${lowerDesc}`;
 
     let bestCategory = 'Other';
     let maxMatches = 0;
@@ -41,9 +43,12 @@ const analyzeReport = (text: string) => {
     CATEGORY_RULES.forEach(rule => {
         let matches = 0;
         rule.keywords.forEach(kw => {
-            if (lowerText.includes(kw.toLowerCase())) {
+            const lowerKw = kw.toLowerCase();
+            if (lowerCombined.includes(lowerKw)) {
                 matches++;
-                totalSeverityScore += 15; // Each keyword match increases severity score
+                totalSeverityScore += 15;
+                // Bonus if keyword is in the title
+                if (lowerTitle.includes(lowerKw)) totalSeverityScore += 5;
             }
         });
 
@@ -53,15 +58,28 @@ const analyzeReport = (text: string) => {
         }
     });
 
-    // Base severity based on text length (just as a simple heuristic)
-    if (lowerText.length > 500) totalSeverityScore += 20;
+    // HIGH SEVERITY KEYWORD ANALYSIS
+    HIGH_SEVERITY_KEYWORDS.forEach(kw => {
+        const lowerKw = kw.toLowerCase();
+        if (lowerCombined.includes(lowerKw)) {
+            totalSeverityScore += 35; // Base high-severity weight (Automatic Medium)
+            
+            // Critical Bonus if keyword is in the title
+            if (lowerTitle.includes(lowerKw)) {
+                totalSeverityScore += 25; // 35 + 25 = 60 (Automatic High)
+            }
+        }
+    });
+
+    // Base severity based on text length
+    if (lowerCombined.length > 500) totalSeverityScore += 10;
 
     // Cap the score at 100
     const finalScore = Math.min(100, totalSeverityScore);
 
     let severityLabel = 'Low';
-    if (finalScore >= 75) severityLabel = 'High';
-    else if (finalScore >= 40) severityLabel = 'Medium';
+    if (finalScore >= 60) severityLabel = 'High';
+    else if (finalScore >= 30) severityLabel = 'Medium';
 
     return {
         category: maxMatches > 0 ? bestCategory : 'Uncategorized',
@@ -166,7 +184,9 @@ router.patch('/moderate/:id', authMiddleware, async (req: AuthRequest, res: expr
         }
 
         // Notification logic for User
-        if (status === 'Verified' && !updatedReport.isAnonymous && updatedReport.author) {
+        console.log(`[MODERATION] Checking notification for author: ${updatedReport.author}, status: ${status}`);
+        if (status === 'Verified' && updatedReport.author) {
+            console.log(`[MODERATION] Creating verification notification for citizen: ${updatedReport.author}`);
             await Notification.create({
                 recipient: updatedReport.author,
                 title: '✅ Report Verified',
@@ -174,6 +194,7 @@ router.patch('/moderate/:id', authMiddleware, async (req: AuthRequest, res: expr
                 type: 'report_verified',
                 link: '/dashboard/reports'
             });
+            console.log(`[MODERATION] Notification created successfully.`);
         }
 
         res.json(updatedReport);
@@ -184,7 +205,7 @@ router.patch('/moderate/:id', authMiddleware, async (req: AuthRequest, res: expr
 
 // POST new report (Requires Auth)
 // @ts-ignore
-router.post('/', authMiddleware, uploadMemory.array('images', 5), async (req: AuthRequest, res: express.Response) => {
+router.post('/', authMiddleware, uploadReport.array('images', 5), async (req: AuthRequest, res: express.Response) => {
     try {
         console.log("Standard Report Submission Started");
         const { title, description, location, seatId } = req.body;
@@ -193,42 +214,12 @@ router.post('/', authMiddleware, uploadMemory.array('images', 5), async (req: Au
             return res.status(400).json({ error: 'Title, description, and location are required' });
         }
 
-        const imageUrls: string[] = [];
-        const files = req.files as Express.Multer.File[];
-
-        if (files && files.length > 0) {
-            console.log(`Uploading ${files.length} media files to Cloudinary...`);
-
-            const uploadPromises = files.map(file => {
-                return new Promise<string>((resolve, reject) => {
-                    const uploadStream = cloudinary.uploader.upload_stream(
-                        {
-                            folder: 'shuddhoBD/reports',
-                            resource_type: 'auto', // Handles both images and videos
-                            quality: 'auto',
-                            fetch_format: 'auto'
-                        },
-                        (error, result) => {
-                            if (error) reject(error);
-                            else resolve((result as any).secure_url);
-                        }
-                    );
-                    Readable.from(file.buffer).pipe(uploadStream);
-                });
-            });
-
-            try {
-                const results = await Promise.all(uploadPromises);
-                imageUrls.push(...results);
-                console.log("Successfully uploaded to Cloudinary:", imageUrls);
-            } catch (uploadErr: any) {
-                console.error("Standard Report Cloudinary Error:", uploadErr);
-                throw uploadErr;
-            }
-        }
+        // With uploadReport, files are already uploaded to Cloudinary
+        const files = req.files as any[];
+        const imageUrls = files ? files.map(file => file.path || file.secure_url) : [];
 
         const combinedText = `${title} ${description}`;
-        const analysis = analyzeReport(combinedText);
+        const analysis = analyzeReport(title, description);
 
         const newReport = new (Report as any)({
             author: (req.user as any)._id,
@@ -247,14 +238,17 @@ router.post('/', authMiddleware, uploadMemory.array('images', 5), async (req: Au
 
         // Notification logic for Admin
         const containsHighSeverity = HIGH_SEVERITY_KEYWORDS.some(kw => combinedText.toLowerCase().includes(kw));
+        const isHighSeverity = containsHighSeverity || analysis.severity === 'High';
         
-        await Notification.create({
-            recipient: null, // Global admin
-            title: containsHighSeverity ? '🔥 Critical Report Submitted' : '📄 New Report Request',
-            message: `A new report "${title}" has been submitted for review. ${containsHighSeverity ? 'Contains high-severity keywords.' : ''}`,
-            type: containsHighSeverity ? 'high_severity' : 'new_report',
+        console.log(`[REPORTS] Attempting to create admin notification (Standard). Role targeted: admin`);
+        const notif = await Notification.create({
+            recipientRole: 'admin',
+            title: isHighSeverity ? '🔥 Critical Report Submitted' : '📄 New Report Request',
+            message: `A new report "${title}" has been submitted for review. ${isHighSeverity ? 'High risk alerts detected.' : ''}`,
+            type: isHighSeverity ? 'high_severity' : 'new_report',
             link: '/dashboard/reports'
         });
+        console.log(`[REPORTS] Notification created: ${notif._id}`);
 
         res.status(201).json(newReport);
     } catch (err: any) {
@@ -267,63 +261,24 @@ router.post('/', authMiddleware, uploadMemory.array('images', 5), async (req: Au
 // ... categorization code ...
 
 // @ts-ignore
-router.post('/anonymous', authMiddleware, uploadMemory.array('images', 5), async (req: AuthRequest, res: express.Response) => {
+router.post('/anonymous', authMiddleware, uploadReport.array('images', 5), async (req: AuthRequest, res: express.Response) => {
     try {
-        console.log("Anonymous Report Submission Started (Manual Upload Mode)");
-        console.log("User:", req.user?._id);
-        console.log("Body:", req.body);
-        const files = req.files as Express.Multer.File[];
-        console.log("Files detected:", files ? `${files.length} files` : "0 files");
+        console.log("Anonymous Report Submission Started (Automated Upload Mode)");
+        const files = req.files as any[];
+        const imageUrls = files ? files.map(file => file.path || file.secure_url) : [];
 
         const { title, description, location, seatId } = req.body;
 
         if (!title || !description || !location) {
-            console.log("Missing fields:", { title, description, location });
             return res.status(400).json({ error: 'Title, description, and location are required' });
         }
 
-        const imageUrls: string[] = [];
-
-        if (files && files.length > 0) {
-            console.log(`Starting Cloudinary upload for ${files.length} secure files...`);
-
-            const uploadPromises = files.map(file => {
-                return new Promise<string>((resolve, reject) => {
-                    const uploadStream = cloudinary.uploader.upload_stream(
-                        {
-                            folder: 'shuddhoBD/reports',
-                            resource_type: 'auto', // Handles both videos and images seamlessly
-                            quality: 'auto',
-                            fetch_format: 'auto'
-                        },
-                        (error, result) => {
-                            if (error) {
-                                console.error("Cloudinary Stream Error:", error);
-                                reject(error);
-                            } else {
-                                resolve((result as any).secure_url);
-                            }
-                        }
-                    );
-                    Readable.from(file.buffer).pipe(uploadStream);
-                });
-            });
-
-            try {
-                const results = await Promise.all(uploadPromises);
-                imageUrls.push(...results);
-                console.log("Cloudinary Upload Success:", imageUrls);
-            } catch (uploadErr: any) {
-                console.error("Cloudinary Upload Process Failed:", uploadErr);
-                throw new Error(`Cloudinary media upload failed: ${uploadErr.message}`);
-            }
-        }
-
         const combinedText = `${title} ${description}`;
-        const analysis = analyzeReport(combinedText);
+        const analysis = analyzeReport(title, description);
         const trackingId = crypto.randomBytes(8).toString('hex').toUpperCase();
 
         const newReport = new (Report as any)({
+            author: (req.user as any)._id,
             title,
             description,
             location,
@@ -341,14 +296,17 @@ router.post('/anonymous', authMiddleware, uploadMemory.array('images', 5), async
 
         // Notification logic for Admin
         const containsHighSeverity = HIGH_SEVERITY_KEYWORDS.some(kw => combinedText.toLowerCase().includes(kw));
+        const isHighSeverity = containsHighSeverity || analysis.severity === 'High';
         
-        await Notification.create({
-            recipient: null, // Global admin
-            title: containsHighSeverity ? '🔥 Critical Anonymous Report' : '🕵️ New Anonymous Submission',
+        console.log(`[REPORTS] Attempting to create admin notification. Role targeted: admin`);
+        const notif = await Notification.create({
+            recipientRole: 'admin',
+            title: isHighSeverity ? '🔥 Critical Anonymous Report' : '🕵️ New Anonymous Submission',
             message: `An anonymous report "${title}" has been submitted. Tracking ID: ${trackingId}.`,
-            type: containsHighSeverity ? 'high_severity' : 'new_report',
+            type: isHighSeverity ? 'high_severity' : 'new_report',
             link: '/dashboard/reports'
         });
+        console.log(`[REPORTS] Notification created: ${notif._id}`);
 
         res.status(201).json({
             message: 'Report submitted autonomously and securely via Cloudinary.',

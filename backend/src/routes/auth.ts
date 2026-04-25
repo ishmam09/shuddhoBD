@@ -1,5 +1,6 @@
 import { Router, Response } from "express";
 import jwt from "jsonwebtoken";
+import mongoose from "mongoose";
 import { User } from "../models/User";
 import { OTP } from "../models/OTP";
 import { sendOTPVerificationEmail, sendProfileUpdateOTPEmail } from "../utils/mailer";
