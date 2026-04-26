@@ -1,6 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { GoogleMap, Marker, InfoWindow, Circle } from "@react-google-maps/api";
-import { useGoogleMapsLoad } from "../context/GoogleMapsContext";
+import { useLoadScript, GoogleMap, Marker, InfoWindow, Circle } from "@react-google-maps/api";
 import { MapPin } from "lucide-react";
 
 export default function MapPage() {
@@ -8,7 +7,9 @@ export default function MapPage() {
     const [selectedMarker, setSelectedMarker] = useState<any>(null);
 
     // Google maps setup
-    const { isLoaded, loadError } = useGoogleMapsLoad();
+    const { isLoaded, loadError } = useLoadScript({
+        googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "",
+    });
 
     useEffect(() => {
         const fetchReports = async () => {
@@ -76,16 +77,11 @@ export default function MapPage() {
             <div
                 className="w-full relative shadow-[0_0_50px_-15px_rgba(99,102,241,0.6)] rounded-3xl overflow-hidden border-4 border-indigo-500/40 outline outline-4 outline-offset-4 outline-slate-800"
                 style={{ height: "75vh", minHeight: "500px" }}
-            >
-                {loadError && (
+                {!import.meta.env.VITE_GOOGLE_MAPS_API_KEY && (
                     <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 px-4 py-2 bg-rose-500/90 text-white text-sm font-bold rounded-lg shadow-lg backdrop-blur-sm shadow-rose-500/20">
-                        Map Error: {(loadError as any)?.message || "Failed to load"}
+                        Map may be restricted: Missing Google Maps API Key
                     </div>
                 )}
-                {/* Debug info to verify key is actually being loaded in Vercel */}
-                <div className="absolute bottom-2 right-2 z-10 px-2 py-1 bg-black/50 text-[8px] text-slate-400 rounded">
-                    Key: {(import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "MISSING").substring(0, 4)}...{(import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "MISSING").slice(-4)}
-                </div>
                 <GoogleMap
                     zoom={7}
                     center={center}

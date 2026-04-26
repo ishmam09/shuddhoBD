@@ -1,8 +1,7 @@
 import { useState, useRef, useMemo, useEffect } from "react";
 import type { FormEvent, ChangeEvent } from "react";
 import { Shield, MapPin, FileText, Camera, UploadCloud, X, Lock, CheckCircle2, Plus, Search, ChevronDown } from "lucide-react";
-import { GoogleMap, Marker } from "@react-google-maps/api";
-import { useGoogleMapsLoad } from "../context/GoogleMapsContext";
+import { useLoadScript, GoogleMap, Marker } from "@react-google-maps/api";
 import { constituenciesData } from "../data/constituencies";
 
 const API_BASE = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:5001/api`;
@@ -49,8 +48,9 @@ export default function AnonymousReport() {
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
-    const { isLoaded, loadError } = useGoogleMapsLoad();
-    if (loadError) console.error("Anonymous Report Map Error:", loadError);
+    const { isLoaded } = useLoadScript({
+        googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "",
+    });
     const mapCenter = useMemo(() => ({ lat: 23.6850, lng: 90.3563 }), []);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -328,7 +328,7 @@ export default function AnonymousReport() {
                                         className="w-full rounded-2xl border-2 border-slate-700/50 bg-black/40 px-5 py-4 text-white placeholder:text-slate-600 focus:border-indigo-500 focus:bg-slate-800/80 focus:outline-none transition-all mb-3"
                                         placeholder="e.g. Intersection of Road 12 & Main Avenue, Dhaka (or click map)"
                                     />
-                                    {isLoaded && (
+                                    {isLoaded && import.meta.env.VITE_GOOGLE_MAPS_API_KEY && (
                                         <div className="w-full h-48 rounded-2xl overflow-hidden border-2 border-slate-700/50 relative">
                                             <GoogleMap
                                                 zoom={6}

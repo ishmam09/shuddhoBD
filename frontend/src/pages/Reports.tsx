@@ -2,9 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MapPin, Plus, X, ShieldCheck, Check, Ban, Edit2, Trash2, FileText } from 'lucide-react';
 
-import { GoogleMap, Marker } from "@react-google-maps/api";
+import { useLoadScript, GoogleMap, Marker } from "@react-google-maps/api";
 import { useAuth } from '../context/AuthContext';
-import { useGoogleMapsLoad } from '../context/GoogleMapsContext';
 
 
 const API_BASE = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:5001/api`;
@@ -28,11 +27,9 @@ export default function Reports() {
     // Detailed View State
     const [selectedReport, setSelectedReport] = useState<any>(null);
 
-    const { isLoaded, loadError } = useGoogleMapsLoad();
-
-    if (loadError) {
-        console.error("Google Maps Load Error:", loadError);
-    }
+    const { isLoaded } = useLoadScript({
+        googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "",
+    });
 
 
     const fetchReports = async () => {
@@ -311,7 +308,7 @@ export default function Reports() {
                                                     <MapPin className="w-4 h-4 text-shuddho-red shrink-0 mt-0.5" />
                                                     <span>{selectedReport.location}</span>
                                                 </div>
-                                                {isLoaded && !loadError && selectedReport.location.match(/^-?\d+(\.\d+)?,\s*-?\d+(\.\d+)?$/) ? (
+                                                {isLoaded && import.meta.env.VITE_GOOGLE_MAPS_API_KEY && selectedReport.location.match(/^-?\d+(\.\d+)?,\s*-?\d+(\.\d+)?$/) ? (
                                                     <div className="w-full h-32 rounded-xl overflow-hidden border border-slate-700 mt-2">
                                                         <GoogleMap
                                                             zoom={14}
