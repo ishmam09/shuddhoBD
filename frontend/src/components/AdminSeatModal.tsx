@@ -121,7 +121,10 @@ export default function AdminSeatModal({ seat, onClose, onSaved, mode = 'assets'
                     credentials: "include",
                     body: formData
                 });
-                if (!imgRes.ok) throw new Error("Seat saved, but failed to upload candidate image.");
+                if (!imgRes.ok) {
+                    const imgData = await imgRes.json().catch(() => ({}));
+                    throw new Error(`Seat saved, but failed to upload image: ${imgData.message || imgRes.statusText}`);
+                }
             }
 
             onSaved();

@@ -106,7 +106,8 @@ export default function RepresentativeProfile() {
                 const data = await res.json();
                 setDbSeat((prev: any) => ({ ...prev, candidateImage: data.candidateImage }));
             } else {
-                alert("Failed to upload image. Please try again.");
+                const imgData = await res.json().catch(() => ({}));
+                alert(`Failed to upload image: ${imgData.message || res.statusText}`);
             }
         } catch (err) {
             console.error("Upload Error:", err);
