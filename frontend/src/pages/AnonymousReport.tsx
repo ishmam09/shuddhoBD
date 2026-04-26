@@ -328,7 +328,7 @@ export default function AnonymousReport() {
                                         className="w-full rounded-2xl border-2 border-slate-700/50 bg-black/40 px-5 py-4 text-white placeholder:text-slate-600 focus:border-indigo-500 focus:bg-slate-800/80 focus:outline-none transition-all mb-3"
                                         placeholder="e.g. Intersection of Road 12 & Main Avenue, Dhaka (or click map)"
                                     />
-                                    {isLoaded && import.meta.env.VITE_GOOGLE_MAPS_API_KEY && (
+                                    {isLoaded && (
                                         <div className="w-full h-48 rounded-2xl overflow-hidden border-2 border-slate-700/50 relative">
                                             <GoogleMap
                                                 zoom={6}
