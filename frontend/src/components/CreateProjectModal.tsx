@@ -120,7 +120,8 @@ export default function CreateProjectModal({ onClose, onSuccess, initialSeatId }
         onClose();
       } else {
         const data = await res.json();
-        throw new Error(data.message || 'Failed to create project');
+        const detailMsg = data.error || data.message || 'Failed to create project';
+        throw new Error(detailMsg);
       }
     } catch (err: any) {
       setError(err.message);

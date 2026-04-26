@@ -34,9 +34,13 @@ router.post('/', authMiddleware, requireRoles('admin'), async (req: AuthRequest,
     const project = new Project(req.body);
     await project.save();
     res.status(201).json(project);
-  } catch (error) {
+  } catch (error: any) {
     console.error(error);
-    res.status(500).json({ message: 'Server error creating project' });
+    res.status(500).json({ 
+      message: 'Server error creating project', 
+      error: error.message,
+      details: error.errors // This contains Mongoose validation errors
+    });
   }
 });
 
