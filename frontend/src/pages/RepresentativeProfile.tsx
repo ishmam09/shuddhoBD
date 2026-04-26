@@ -96,6 +96,9 @@ export default function RepresentativeProfile() {
             const API_BASE = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:5001/api`;
             const res = await fetch(`${API_BASE}/seats/${dbSeat._id}/image`, {
                 method: 'POST',
+                headers: { 
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
                 credentials: 'include',
                 body: formData
             });

@@ -116,6 +116,9 @@ export default function AdminSeatModal({ seat, onClose, onSaved, mode = 'assets'
                 formData.append("image", imageFile);
                 const imgRes = await fetch(`${API_BASE}/seats/${data._id}/image`, {
                     method: "POST",
+                    headers: { 
+                        "Authorization": `Bearer ${localStorage.getItem('token')}`
+                    },
                     credentials: "include",
                     body: formData
                 });
