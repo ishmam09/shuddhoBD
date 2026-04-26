@@ -41,7 +41,11 @@ export default function Dashboard() {
                 const res = await fetch(`${API_BASE}/reports`, { credentials: 'include' });
                 if (res.ok) {
                     const data = await res.json();
-                    const mine = data.filter((r: any) => r.author && r.author._id === user.id);
+                    const mine = data.filter((r: any) => {
+                        if (!r.author) return false;
+                        const authorId = typeof r.author === 'object' ? r.author._id : r.author;
+                        return String(authorId) === String(user.id);
+                    });
                     setMyReports(mine);
                 }
             } catch (err) {

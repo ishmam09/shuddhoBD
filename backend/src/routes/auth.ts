@@ -312,7 +312,20 @@ router.get("/me", authMiddleware, (req: AuthRequest, res: Response) => {
     { expiresIn: ENV.jwtExpiresIn as any }
   );
 
-  return res.json({ user: req.user, token });
+  return res.json({ 
+    user: {
+      id: req.user._id,
+      name: req.user.name,
+      email: req.user.email,
+      role: req.user.role,
+      phone: req.user.phone,
+      nid: req.user.nid,
+      address: req.user.address,
+      gender: req.user.gender,
+      profileImage: req.user.profileImage,
+    }, 
+    token 
+  });
 });
 
 router.patch("/profile", authMiddleware, async (req: AuthRequest, res: Response) => {
