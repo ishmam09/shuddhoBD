@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MapPin, Plus, X, ShieldCheck, Check, Ban, Edit2, Trash2, FileText } from 'lucide-react';
 
-import { useLoadScript, GoogleMap, Marker } from "@react-google-maps/api";
+import { GoogleMap, Marker } from "@react-google-maps/api";
 import { useAuth } from '../context/AuthContext';
+import { useGoogleMapsLoad } from '../context/GoogleMapsContext';
 
 
 const API_BASE = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:5001/api`;
@@ -27,9 +28,7 @@ export default function Reports() {
     // Detailed View State
     const [selectedReport, setSelectedReport] = useState<any>(null);
 
-    const { isLoaded, loadError } = useLoadScript({
-        googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "",
-    });
+    const { isLoaded, loadError } = useGoogleMapsLoad();
 
     if (loadError) {
         console.error("Google Maps Load Error:", loadError);

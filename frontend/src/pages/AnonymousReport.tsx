@@ -1,7 +1,8 @@
 import { useState, useRef, useMemo, useEffect } from "react";
 import type { FormEvent, ChangeEvent } from "react";
 import { Shield, MapPin, FileText, Camera, UploadCloud, X, Lock, CheckCircle2, Plus, Search, ChevronDown } from "lucide-react";
-import { useLoadScript, GoogleMap, Marker } from "@react-google-maps/api";
+import { GoogleMap, Marker } from "@react-google-maps/api";
+import { useGoogleMapsLoad } from "../context/GoogleMapsContext";
 import { constituenciesData } from "../data/constituencies";
 
 const API_BASE = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:5001/api`;
@@ -48,9 +49,8 @@ export default function AnonymousReport() {
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
-    const { isLoaded } = useLoadScript({
-        googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "",
-    });
+    const { isLoaded, loadError } = useGoogleMapsLoad();
+    if (loadError) console.error("Anonymous Report Map Error:", loadError);
     const mapCenter = useMemo(() => ({ lat: 23.6850, lng: 90.3563 }), []);
 
     const fileInputRef = useRef<HTMLInputElement>(null);

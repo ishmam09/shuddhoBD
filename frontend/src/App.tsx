@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
+import { GoogleMapsProvider } from "./context/GoogleMapsContext";
 import AuthPage from "./pages/AuthPage";
 import DashboardLayout from "./components/DashboardLayout";
 import Dashboard from "./pages/Dashboard";
@@ -17,7 +18,8 @@ import CivicAnalyst from "./pages/CivicAnalyst";
 
 function App() {
   return (
-    <AuthProvider>
+    <GoogleMapsProvider>
+      <AuthProvider>
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<AuthPage />} />
@@ -42,6 +44,7 @@ function App() {
         </Routes>
       </BrowserRouter>
     </AuthProvider>
+    </GoogleMapsProvider>
   );
 }
 
