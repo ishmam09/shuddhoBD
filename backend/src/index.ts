@@ -26,7 +26,8 @@ const corsOptions: cors.CorsOptions = {
       !origin ||
       allowedOrigins.includes(origin) ||
       origin.startsWith("http://192.168.") ||
-      origin.startsWith("http://10.")
+      origin.startsWith("http://10.") ||
+      origin.endsWith(".vercel.app")
     ) {
       callback(null, true);
     } else {
