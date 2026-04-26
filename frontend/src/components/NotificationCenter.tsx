@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Bell, Check, Trash2, X, AlertCircle, FileText, CheckCircle2 } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Bell, Check, AlertCircle, FileText, CheckCircle2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const API_BASE = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:5001/api`;

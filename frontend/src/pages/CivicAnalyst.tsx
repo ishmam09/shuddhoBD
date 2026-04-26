@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Cpu, ShieldAlert, Activity, CheckCircle, Database } from 'lucide-react';
 
 const API_BASE = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:5001/api`;

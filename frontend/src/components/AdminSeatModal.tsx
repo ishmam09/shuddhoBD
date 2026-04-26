@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { X, Plus, Trash2, PieChart, Target, Landmark } from "lucide-react";
+import { X, Plus, Target, Landmark } from "lucide-react";
 import { SECTORS_LIST } from "../data/constituencies";
 import CreateProjectModal from "./CreateProjectModal";
 
@@ -173,22 +173,6 @@ export default function AdminSeatModal({ seat, onClose, onSaved, mode = 'assets'
             ...prev,
             sectors: { ...prev.sectors, [sector]: num }
         }));
-    };
-
-    const addProject = () => {
-        setForm(prev => ({ ...prev, projects: [...prev.projects, ""] }));
-    };
-
-    const updateProject = (idx: number, val: string) => {
-        setForm(prev => {
-            const next = [...prev.projects];
-            next[idx] = val;
-            return { ...prev, projects: next };
-        });
-    };
-
-    const removeProject = (idx: number) => {
-        setForm(prev => ({ ...prev, projects: prev.projects.filter((_, i) => i !== idx) }));
     };
 
     const sectorTotal = SECTORS_LIST.reduce((acc, s) => acc + (form.sectors[s] || 0), 0);

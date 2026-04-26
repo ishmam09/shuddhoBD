@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MapPin, Plus, X, ShieldCheck, Check, Ban, Edit2, Trash2, FileText } from 'lucide-react';
-import React from 'react';
+
 import { useLoadScript, GoogleMap, Marker } from "@react-google-maps/api";
 import { useAuth } from '../context/AuthContext';
 
@@ -30,7 +30,7 @@ export default function Reports() {
     const { isLoaded } = useLoadScript({
         googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "",
     });
-    const mapCenter = React.useMemo(() => ({ lat: 23.6850, lng: 90.3563 }), []);
+
 
     const fetchReports = async () => {
         setLoading(true);
@@ -493,11 +493,8 @@ export default function Reports() {
                                         }`}>{report.resolution || 'Unsolved'}</span>
                                     </div>
                                     <div className="flex gap-1.5 h-1.5 w-full">
-                                        {(['Unsolved', 'Ongoing', 'Solved'] as const).map((step, idx) => {
+                                        {(['Unsolved', 'Ongoing', 'Solved'] as const).map((step) => {
                                             const isActive = (report.resolution || 'Unsolved') === step;
-                                            const isPast = step === 'Unsolved' || 
-                                                           (step === 'Ongoing' && (report.resolution === 'Ongoing' || report.resolution === 'Solved')) ||
-                                                           (step === 'Solved' && report.resolution === 'Solved');
                                             
                                             // Determine if this step is "reached" (highlighted or part of the progress)
                                             // However, the user said "3 small bars... admin can select any of them".

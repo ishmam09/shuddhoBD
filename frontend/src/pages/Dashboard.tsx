@@ -41,7 +41,7 @@ export default function Dashboard() {
                 const res = await fetch(`${API_BASE}/reports`);
                 if (res.ok) {
                     const data = await res.json();
-                    const mine = data.filter((r: any) => r.author && r.author._id === user._id);
+                    const mine = data.filter((r: any) => r.author && r.author._id === (user as any)._id);
                     setMyReports(mine);
                 }
             } catch (err) {
@@ -235,7 +235,7 @@ export default function Dashboard() {
                 {!loading && !error && (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {articles.slice(0, 3).map((article, index) => (
-                        <NewsCard key={index} {...article} hideImage={true} />
+                        <NewsCard key={index} title={article.title} link={article.url} image={article.urlToImage || ''} pubDate={article.publishedAt} source={article.source} hideImage={true} />
                     ))}
                     </div>
                 )}

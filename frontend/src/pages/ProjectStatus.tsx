@@ -1,11 +1,10 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Clock, AlertTriangle, ShieldCheck, X, ChevronDown, Search } from 'lucide-react';
 import ChallengeModal from '../components/ChallengeModal';
 import AdminReviewModal from '../components/AdminReviewModal';
 import CreateProjectModal from '../components/CreateProjectModal';
-import UpdateProgressModal from '../components/UpdateProgressModal';
 import { constituenciesData } from '../data/constituencies';
 import {
   Chart as ChartJS,
@@ -116,10 +115,7 @@ export default function ProjectStatus() {
     }
   }, [projects, location.state, location.pathname, navigate]);
 
-  const handleSelectProject = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const proj = projects.find(p => p._id === e.target.value);
-    setSelectedProject(proj || null);
-  };
+
 
   const handleDelete = async (id: string) => {
     if (!window.confirm("Delete this project?")) return;

@@ -139,7 +139,7 @@ export default function RepresentativeProfile() {
     // Prefer database values if they exist, otherwise fallback to mock data
     const budgetAllocation = dbSeat?.budgetAllocation || rep.budgetAllocation;
     const sectors = (dbSeat?.sectors && Object.keys(dbSeat.sectors).length > 0) ? dbSeat.sectors : rep.sectors;
-    const { experience } = rep;
+    // Removed unused experience variable
 
     // Fixed color mapping for the 8 sectors
     const sectorColors = [
