@@ -27,9 +27,13 @@ export default function Reports() {
     // Detailed View State
     const [selectedReport, setSelectedReport] = useState<any>(null);
 
-    const { isLoaded } = useLoadScript({
+    const { isLoaded, loadError } = useLoadScript({
         googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "",
     });
+
+    if (loadError) {
+        console.error("Google Maps Load Error:", loadError);
+    }
 
 
     const fetchReports = async () => {
@@ -308,7 +312,7 @@ export default function Reports() {
                                                     <MapPin className="w-4 h-4 text-shuddho-red shrink-0 mt-0.5" />
                                                     <span>{selectedReport.location}</span>
                                                 </div>
-                                                {isLoaded && import.meta.env.VITE_GOOGLE_MAPS_API_KEY && selectedReport.location.match(/^-?\d+(\.\d+)?,\s*-?\d+(\.\d+)?$/) && (
+                                                {isLoaded && !loadError && import.meta.env.VITE_GOOGLE_MAPS_API_KEY && selectedReport.location.match(/^-?\d+(\.\d+)?,\s*-?\d+(\.\d+)?$/) ? (
                                                     <div className="w-full h-32 rounded-xl overflow-hidden border border-slate-700 mt-2">
                                                         <GoogleMap
                                                             zoom={14}
@@ -325,7 +329,9 @@ export default function Reports() {
                                                             <Marker position={{ lat: parseFloat(selectedReport.location.split(',')[0]), lng: parseFloat(selectedReport.location.split(',')[1]) }} />
                                                         </GoogleMap>
                                                     </div>
-                                                )}
+                                                ) : !import.meta.env.VITE_GOOGLE_MAPS_API_KEY ? (
+                                                    <div className="text-[10px] text-rose-400 mt-2 italic">Map unavailable: Missing API Key</div>
+                                                ) : null}
                                             </div>
 
                                             <div className="w-full h-px bg-shuddho-border"></div>
