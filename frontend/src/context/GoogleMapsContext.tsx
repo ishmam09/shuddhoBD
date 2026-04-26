@@ -12,7 +12,7 @@ const GoogleMapsContext = createContext<GoogleMapsContextType>({
   loadError: undefined,
 });
 
-const libraries: Libraries = ["places"];
+const libraries: Libraries = [];
 
 export const GoogleMapsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isLoaded, loadError } = useLoadScript({
