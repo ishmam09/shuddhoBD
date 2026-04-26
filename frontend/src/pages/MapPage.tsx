@@ -82,6 +82,10 @@ export default function MapPage() {
                         Map Error: {(loadError as any)?.message || "Failed to load"}
                     </div>
                 )}
+                {/* Debug info to verify key is actually being loaded in Vercel */}
+                <div className="absolute bottom-2 right-2 z-10 px-2 py-1 bg-black/50 text-[8px] text-slate-400 rounded">
+                    Key: {(import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "MISSING").substring(0, 4)}...{(import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "MISSING").slice(-4)}
+                </div>
                 <GoogleMap
                     zoom={7}
                     center={center}
