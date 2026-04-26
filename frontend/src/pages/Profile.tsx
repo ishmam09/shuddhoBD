@@ -86,11 +86,10 @@ export default function Profile() {
         setMessage(null);
 
         try {
+            const token = localStorage.getItem('token');
             const res = await fetch(`${API_BASE}/auth/profile-image`, {
                 method: "POST",
-                headers: { 
-                    "Authorization": `Bearer ${localStorage.getItem('token')}`
-                },
+                headers: token ? { "Authorization": `Bearer ${token}` } : {},
                 credentials: "include",
                 body: formData,
             });

@@ -94,11 +94,10 @@ export default function RepresentativeProfile() {
             formData.append('image', file);
 
             const API_BASE = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:5001/api`;
+            const token = localStorage.getItem('token');
             const res = await fetch(`${API_BASE}/seats/${dbSeat._id}/image`, {
                 method: 'POST',
-                headers: { 
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                },
+                headers: token ? { 'Authorization': `Bearer ${token}` } : {},
                 credentials: 'include',
                 body: formData
             });
