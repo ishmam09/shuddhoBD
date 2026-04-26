@@ -11,7 +11,8 @@ import { uploadProfile } from "../utils/cloudinary";
 const router = Router();
 
 const setAuthCookie = (res: Response, token: string) => {
-  const isProd = ENV.nodeEnv === "production";
+  const isHttps = ENV.clientUrl.startsWith("https://");
+  const isProd = ENV.nodeEnv === "production" || isHttps;
   res.cookie("token", token, {
     httpOnly: true,
     secure: isProd,
@@ -280,7 +281,8 @@ router.post("/reset-password", async (req: AuthRequest, res: Response) => {
 });
 
 router.post("/logout", (req: AuthRequest, res: Response) => {
-  const isProd = ENV.nodeEnv === "production";
+  const isHttps = ENV.clientUrl.startsWith("https://");
+  const isProd = ENV.nodeEnv === "production" || isHttps;
   res.cookie("token", "", {
     httpOnly: true,
     secure: isProd,
@@ -424,7 +426,8 @@ router.delete("/profile", authMiddleware, async (req: AuthRequest, res: Response
     await User.findByIdAndDelete(userId);
 
     // Clear the auth cookie
-    const isProd = ENV.nodeEnv === "production";
+    const isHttps = ENV.clientUrl.startsWith("https://");
+    const isProd = ENV.nodeEnv === "production" || isHttps;
     res.cookie("token", "", {
       httpOnly: true,
       secure: isProd,
