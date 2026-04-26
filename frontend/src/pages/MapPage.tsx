@@ -16,7 +16,7 @@ export default function MapPage() {
             try {
                 // Fetch verified reports for mapping
                 const API_BASE = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:5001/api`;
-                const res = await fetch(`${API_BASE}/reports/public`, { credentials: 'omit' });
+                const res = await fetch(`${API_BASE}/reports`, { credentials: 'omit' });
                 // If public endpoint not existing, fallback to authenticated
                 if (!res.ok) {
                     const fallbackRes = await fetch(`${API_BASE}/reports`, { credentials: 'include' });
