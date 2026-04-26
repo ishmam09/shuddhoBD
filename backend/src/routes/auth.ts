@@ -299,7 +299,20 @@ router.get("/me", authMiddleware, (req: AuthRequest, res: Response) => {
   if (!req.user) {
     return res.status(401).json({ message: "Not authenticated" });
   }
-  return res.json({ user: req.user });
+
+  // Re-sign token for header fallback
+  const token = jwt.sign(
+    {
+      sub: req.user._id.toString(),
+      email: req.user.email,
+      role: req.user.role,
+      name: req.user.name,
+    },
+    ENV.jwtSecret,
+    { expiresIn: ENV.jwtExpiresIn as any }
+  );
+
+  return res.json({ user: req.user, token });
 });
 
 router.patch("/profile", authMiddleware, async (req: AuthRequest, res: Response) => {
