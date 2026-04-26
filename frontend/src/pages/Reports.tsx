@@ -330,7 +330,7 @@ export default function Reports() {
                                                         </GoogleMap>
                                                     </div>
                                                 ) : null}
-                                                {isLoaded && (
+                                                {isLoaded && !import.meta.env.VITE_GOOGLE_MAPS_API_KEY ? (
                                                     <div className="text-[10px] text-rose-400 mt-2 italic">Map unavailable: Missing API Key</div>
                                                 ) : null}
                                             </div>
