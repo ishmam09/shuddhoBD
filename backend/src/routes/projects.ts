@@ -292,3 +292,9 @@ router.delete('/:id/challenge/:challengeId', authMiddleware, requireRoles('admin
 });
 
 export default router;
+
+
+
+
+
+

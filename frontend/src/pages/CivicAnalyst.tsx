@@ -16,56 +16,6 @@ export default function CivicAnalyst() {
       .catch(console.error);
   }, []);
 
-  const runLocalAnalysis = (project: any) => {
-    const budgetDiff = project.actualCompletion - project.budget;
-    const endDate = new Date(project.endDate);
-    const isDelayed = endDate < new Date() && !project.status.includes('completed');
-    const hasChallenges = project.challenges && project.challenges.length > 0;
-    
-    let riskLevel = 'LOW';
-    let explanation = "";
-    let indicators = [];
-    let recommendation = "";
-
-    if (budgetDiff > project.budget * 0.1 || isDelayed || hasChallenges) {
-        riskLevel = (budgetDiff > project.budget * 0.25 || (isDelayed && hasChallenges)) ? 'HIGH' : 'MEDIUM';
-        explanation = "The project shows significant variance from its baseline targets, indicating potential structural risks or mismanagement. ";
-        
-        if (budgetDiff > 0) {
-            explanation += `Financial records indicate an overrun of ৳${budgetDiff.toLocaleString()}. `;
-            indicators.push(`Budget utilization is ৳${budgetDiff.toLocaleString()} above the initial allocation.`);
-        }
-        if (isDelayed) {
-            explanation += `Construction has exceeded the projected completion date. `;
-            indicators.push(`Timeline breach: Project stalled past ${endDate.toLocaleDateString()}.`);
-        }
-        if (hasChallenges) {
-            explanation += `Community reports indicate active ground-level issues. `;
-            indicators.push(`${project.challenges.length} verified citizen challenge(s) pointing to structural or operational failures.`);
-        }
-        
-        recommendation = riskLevel === 'HIGH' 
-            ? "Requires immediate audit review and an on-site investigation." 
-            : "Monitor progress closely and request a detailed expense report.";
-    } else {
-        riskLevel = 'LOW';
-        explanation = "The project is currently operating within stable parameters. Spending is proportional to work done, and no critical anomalies have been flagged by the community.";
-        indicators.push("Budget execution matches the approved sector framework.");
-        indicators.push("Timeline adherence is within the margin of error.");
-        indicators.push("Zero recurring citizen complaints on severity index.");
-        recommendation = "Continue standard quarterly monitoring.";
-    }
-    
-    setReport({
-       riskLevel,
-       explanation: explanation.trim(),
-       indicators,
-       recommendation,
-       isLocal: true
-    });
-    setAnalyzing(false);
-  };
-
   const handleAnalyze = () => {
     if (!selectedProjectId) return;
     const project = projects.find(p => p._id === selectedProjectId);
@@ -74,7 +24,7 @@ export default function CivicAnalyst() {
     setAnalyzing(true);
     setReport(null);
     
-    // Try GPT-4 API first
+    // Call Gemini AI API
     fetch(`${API_BASE}/ai/analyze-project`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -83,9 +33,7 @@ export default function CivicAnalyst() {
       .then(async (r) => {
         const data = await r.json();
         if (!r.ok || data.error) {
-           console.warn("AI API Error, switching to Local Backup:", data.error);
-           runLocalAnalysis(project);
-           return;
+           throw new Error(data.error || "Failed to analyze project");
         }
         setReport({
           riskLevel: data.riskLevel,
@@ -97,8 +45,9 @@ export default function CivicAnalyst() {
         setAnalyzing(false);
       })
       .catch(err => {
-        console.warn("Connection to AI service failed, using Local Backup.");
-        runLocalAnalysis(project);
+        console.error("AI Analysis failed:", err);
+        alert("AI Analysis service is currently unavailable. Please check your GEMINI_API_KEY.");
+        setAnalyzing(false);
       });
   };
 
