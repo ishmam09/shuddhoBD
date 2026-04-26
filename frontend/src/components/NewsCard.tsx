@@ -1,39 +1,57 @@
 import React from 'react';
+import { Newspaper } from 'lucide-react';
 
 interface Props {
   title: string;
-  description: string;
-  url: string;
-  urlToImage: string | null;
-  publishedAt: string;
+  link: string;
+  image: string;
+  pubDate: string;
   source: string;
+  hideImage?: boolean;
 }
 
-const NewsCard: React.FC<Props> = ({ title, description, url, urlToImage, publishedAt, source }) => {
+const NewsCard: React.FC<Props> = ({ title, link, image, pubDate, source, hideImage }) => {
+  
+  const timeAgo = (dateStr: string) => {
+    if (!dateStr) return "Recently";
+    const parsedDate = new Date(dateStr);
+    if (isNaN(parsedDate.getTime())) return dateStr;
+    const diffInSeconds = Math.floor((new Date().getTime() - parsedDate.getTime()) / 1000);
+    
+    if (diffInSeconds < 3600) return `${Math.max(1, Math.floor(diffInSeconds / 60))} mins ago`;
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`;
+    return `${Math.floor(diffInSeconds / 86400)} days ago`;
+  };
+
   return (
     <a
-      href={url}
+      href={link}
       target="_blank"
       rel="noopener noreferrer"
-      className="block bg-shuddho-card rounded-xl shadow border border-shuddho-border hover:border-slate-600 transition overflow-hidden"
+      className="bg-[#0b1121] rounded-xl overflow-hidden border border-slate-800 hover:border-slate-600 transition-colors group flex flex-col h-full"
     >
-      {urlToImage && (
-        <img
-          src={urlToImage}
-          alt={title}
-          className="w-full h-40 object-cover"
-          onError={(e) => (e.currentTarget.style.display = 'none')}
-        />
+      {!hideImage && (
+        image ? (
+          <img
+            src={image}
+            alt={title}
+            className="w-full h-40 object-cover group-hover:scale-105 transition-transform duration-500"
+            onError={(e) => (e.currentTarget.style.display = 'none')}
+          />
+        ) : (
+          <div className="w-full h-40 bg-slate-900 flex items-center justify-center">
+            <Newspaper className="w-12 h-12 text-slate-700" />
+          </div>
+        )
       )}
-      <div className="p-4">
-        <p className="text-xs text-shuddho-neon font-semibold mb-1">{source}</p>
-        <h3 className="text-sm font-bold text-white leading-snug mb-2 line-clamp-2">{title}</h3>
-        <p className="text-xs text-slate-400 line-clamp-2">{description}</p>
-        <p className="text-xs text-slate-500 mt-3">
-          {new Date(publishedAt).toLocaleDateString('en-GB', {
-            day: 'numeric', month: 'short', year: 'numeric',
-          })}
-        </p>
+      <div className="p-4 flex flex-col flex-1">
+        <p className="text-xs text-shuddho-neon font-bold uppercase tracking-wider mb-2">{source}</p>
+        <h3 className="text-sm font-bold text-white leading-snug mb-3 line-clamp-3 group-hover:text-slate-300 transition-colors">{title}</h3>
+        <div className="mt-auto">
+          <p className="text-xs text-slate-400">
+            {timeAgo(pubDate)}
+          </p>
+        </div>
       </div>
     </a>
   );

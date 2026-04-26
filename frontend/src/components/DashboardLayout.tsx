@@ -74,13 +74,7 @@ export default function DashboardLayout() {
                 </nav>
 
                 <div className="flex-1 flex items-center justify-end gap-6">
-                    {/* Dark Mode Toggle (Visual Only) */}
-                    <div className="flex items-center gap-3">
-                        <span className="text-sm font-medium text-slate-400">Dark Mode</span>
-                        <div className="w-12 h-6 rounded-full bg-slate-700 p-1 flex items-center relative cursor-pointer pt-[2px]">
-                            <div className="w-4 h-4 rounded-full bg-shuddho-neon absolute right-1 transition-all"></div>
-                        </div>
-                    </div>
+
                     {/* Notification Icon */}
                     <NotificationCenter />
 

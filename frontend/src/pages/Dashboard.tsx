@@ -143,13 +143,13 @@ export default function Dashboard() {
             </div>
 
             <div className="mt-10 w-full text-left">
-                <h2 className="text-xl font-bold text-white mb-4">Anti-Corruption News</h2>
+                <h2 className="text-xl font-bold text-white mb-4">Latest News</h2>
                 {loading && <p className="text-slate-400 text-sm">Loading news...</p>}
                 {error && <p className="text-shuddho-red text-sm">{error}</p>}
                 {!loading && !error && (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {articles.slice(0, 6).map((article, index) => (
-                        <NewsCard key={index} {...article} />
+                    {articles.slice(0, 3).map((article, index) => (
+                        <NewsCard key={index} {...article} hideImage={true} />
                     ))}
                     </div>
                 )}
