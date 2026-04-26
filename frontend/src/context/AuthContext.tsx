@@ -28,34 +28,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        const fetchUser = async () => {
-            try {
-                const API_BASE = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:5001/api`;
-                const res = await fetch(`${API_BASE}/auth/me`, {
-                    credentials: "include",
-                });
-                if (res.ok) {
-                    const data = await res.json();
-                    setUser(data.user);
-                } else {
-                    setUser(null);
-                }
-            } catch (err) {
+    const fetchUser = async () => {
+        try {
+            const API_BASE = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:5001/api`;
+            const token = localStorage.getItem('token');
+            const headers: any = {};
+            if (token) headers['Authorization'] = `Bearer ${token}`;
+
+            const res = await fetch(`${API_BASE}/auth/me`, {
+                headers,
+                credentials: "include",
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setUser(data.user);
+                if (data.token) localStorage.setItem('token', data.token);
+            } else {
                 setUser(null);
-            } finally {
-                setLoading(false);
+                localStorage.removeItem('token');
             }
-        };
+        } catch (err) {
+            setUser(null);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
         fetchUser();
     }, []);
 
+    const handleSetUser = (u: User | null) => {
+        setUser(u);
+    };
+
     const logout = () => {
         setUser(null);
+        localStorage.removeItem('token');
     };
 
     return (
-        <AuthContext.Provider value={{ user, loading, setUser, logout }}>
+        <AuthContext.Provider value={{ user, loading, setUser: handleSetUser, logout }}>
             {children}
         </AuthContext.Provider>
     );

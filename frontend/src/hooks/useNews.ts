@@ -18,7 +18,8 @@ export const useNews = () => {
     const fetchNews = async () => {
       try {
         setLoading(true);
-        const response = await fetch('/api/news');
+        const API_BASE = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:5001/api`;
+        const response = await fetch(`${API_BASE}/news`, { credentials: 'include' });
         if (!response.ok) throw new Error('Failed to fetch news');
         const data = await response.json();
         setArticles(data.articles);

@@ -84,7 +84,7 @@ export default function ProjectStatus() {
 
   const fetchProjects = async () => {
     try {
-      const res = await fetch(`${API_BASE}/projects`);
+      const res = await fetch(`${API_BASE}/projects`, { credentials: 'include' });
       if (res.ok) {
         const data = await res.json();
         setProjects(data);

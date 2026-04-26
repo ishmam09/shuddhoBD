@@ -19,7 +19,7 @@ const News: React.FC = () => {
       try {
         setLoading(true);
         const API_BASE = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:5001/api`;
-        const res = await fetch(`${API_BASE}/news`);
+        const res = await fetch(`${API_BASE}/news`, { credentials: 'include' });
 
         if (!res.ok) throw new Error('Could not load news');
         const data = await res.json();

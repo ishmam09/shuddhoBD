@@ -22,7 +22,10 @@ export default function UpdateProgressModal({ project, onClose, onSuccess }: Upd
     try {
       const res = await fetch(`${API_BASE}/projects/${project._id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
         body: JSON.stringify({ actualCompletion: Number(spent) }),
         credentials: 'include'
       });

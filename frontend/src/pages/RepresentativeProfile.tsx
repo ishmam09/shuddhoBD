@@ -35,7 +35,7 @@ export default function RepresentativeProfile() {
             if (ctiRes.ok) setCtiData(cti);
 
             // Fetch actual projects for this seat
-            const projRes = await fetch(`${API_BASE}/projects`);
+            const projRes = await fetch(`${API_BASE}/projects`, { credentials: "include" });
             if (projRes.ok) {
                 const allProj = await projRes.json();
                 setActualProjects(allProj.filter((p: any) => p.seatId === Number(seatId)));
@@ -56,7 +56,8 @@ export default function RepresentativeProfile() {
         try {
             setIsDownloading(true);
 
-            const response = await fetch(`/api/audit/pdf/${seatId}`);
+            const API_BASE = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:5001/api`;
+            const response = await fetch(`${API_BASE}/audit/pdf/${seatId}`, { credentials: "include" });
 
             if (!response.ok) {
                 throw new Error('Failed to generate PDF');

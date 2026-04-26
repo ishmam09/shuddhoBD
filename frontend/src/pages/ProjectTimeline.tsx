@@ -18,7 +18,7 @@ export default function ProjectTimeline() {
     // implementing project data fetch
     const fetchProject = async () => {
         try {
-            const res = await fetch(`${API_BASE}/projects/${id}`);
+            const res = await fetch(`${API_BASE}/projects/${id}`, { credentials: 'include' });
             if (res.ok) {
                 const data = await res.json();
                 setProject(data);

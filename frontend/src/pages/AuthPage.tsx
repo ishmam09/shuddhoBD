@@ -151,6 +151,7 @@ export default function AuthPage() {
             }
 
             const data = await res.json();
+            if (data.token) localStorage.setItem('token', data.token);
             setUser(data.user);
             navigate("/dashboard");
         } catch (err: any) {

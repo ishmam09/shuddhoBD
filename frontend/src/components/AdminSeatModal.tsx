@@ -100,7 +100,10 @@ export default function AdminSeatModal({ seat, onClose, onSaved, mode = 'assets'
 
             const res = await fetch(endpoint, {
                 method,
-                headers: { "Content-Type": "application/json" },
+                headers: { 
+                  "Content-Type": "application/json",
+                  "Authorization": `Bearer ${localStorage.getItem('token')}`
+                },
                 credentials: "include",
                 body: JSON.stringify(form)
             });

@@ -105,6 +105,7 @@ router.post("/register", async (req: AuthRequest, res: Response) => {
     setAuthCookie(res, token);
 
     return res.status(201).json({
+      token,
       user: {
         id: user._id,
         name: user.name,
@@ -168,6 +169,7 @@ router.post("/login", async (req: AuthRequest, res: Response) => {
 
       setAuthCookie(res, token);
       return res.json({
+        token,
         user: {
           id: mockUser.id,
           name: mockUser.name,
@@ -209,6 +211,7 @@ router.post("/login", async (req: AuthRequest, res: Response) => {
     setAuthCookie(res, token);
 
     return res.json({
+      token,
       user: {
         id: user._id,
         name: user.name,

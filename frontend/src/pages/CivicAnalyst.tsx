@@ -10,7 +10,7 @@ export default function CivicAnalyst() {
   const [report, setReport] = useState<null | any>(null);
 
   useEffect(() => {
-    fetch(`${API_BASE}/projects`)
+    fetch(`${API_BASE}/projects`, { credentials: "include" })
       .then(r => r.ok ? r.json() : Promise.reject())
       .then(data => setProjects(data))
       .catch(console.error);
@@ -28,7 +28,8 @@ export default function CivicAnalyst() {
     fetch(`${API_BASE}/ai/analyze-project`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ project })
+      body: JSON.stringify({ project }),
+      credentials: "include"
     })
       .then(async (r) => {
         const data = await r.json();

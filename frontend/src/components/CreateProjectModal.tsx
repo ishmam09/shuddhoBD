@@ -107,7 +107,10 @@ export default function CreateProjectModal({ onClose, onSuccess, initialSeatId }
       const res = await fetch(`${API_BASE}/projects`, {
 
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
         body: JSON.stringify(body),
         credentials: 'include'
       });
