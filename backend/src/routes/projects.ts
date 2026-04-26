@@ -258,7 +258,7 @@ router.patch('/:id/challenge/:challengeId/moderate', authMiddleware, requireRole
     const project = await Project.findById(req.params.id);
     if (!project) return res.status(404).json({ message: 'Project not found' });
 
-    const challenge = project.challenges.id(req.params.challengeId);
+    const challenge = (project.challenges as any).id(req.params.challengeId);
     if (!challenge) return res.status(404).json({ message: 'Challenge not found' });
 
     challenge.status = status;
@@ -281,7 +281,7 @@ router.delete('/:id/challenge/:challengeId', authMiddleware, requireRoles('admin
     const project = await Project.findById(req.params.id);
     if (!project) return res.status(404).json({ message: 'Project not found' });
 
-    project.challenges.pull({ _id: req.params.challengeId });
+    (project.challenges as any).pull({ _id: req.params.challengeId });
     await project.save();
 
     res.json({ message: 'Challenge deleted successfully', project });

@@ -1,7 +1,7 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import Notification from '../models/Notification';
-import User from '../models/User';
+import { User } from '../models/User';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
 
 const router = express.Router();
