@@ -45,7 +45,7 @@ export default function DashboardLayout() {
     return (
         <div className="min-h-screen bg-shuddho-bg font-sans text-white flex flex-col">
             {/* Top Navigation Bar */}
-            <header className="fixed top-0 left-0 right-0 h-20 bg-shuddho-bg/95 backdrop-blur-md z-50 flex items-center px-8">
+            <header className="fixed top-0 left-0 right-0 h-20 bg-slate-900/40 backdrop-blur-xl border-b border-white/5 shadow-lg shadow-black/20 z-50 flex items-center px-8 transition-all">
                 <div className="flex-1 flex items-center gap-2">
                     {/* Logo (Approximating SHUDDHOBD with alternating font weights or simple text) */}
                     <Link to="/dashboard" className="text-xl tracking-[0.2em] flex items-center text-white">
@@ -66,8 +66,8 @@ export default function DashboardLayout() {
                     <NavItem label="Project Status" href="/dashboard/project-status" active={location.pathname === '/dashboard/project-status'} />
                     <NavItem label="Reports" href="/dashboard/reports" active={location.pathname === '/dashboard/reports'} />
                     <NavItem label="Asset Data" href="/dashboard/assets" active={location.pathname === '/dashboard/assets'} />
-                    <NavItem label="Anonymous" href="/dashboard/anonymous-report" active={location.pathname === '/dashboard/anonymous-report'} />
-                    <NavItem label="Map" href="/dashboard/map" active={location.pathname === '/dashboard/map'} />
+                    <NavItem label="Anonymous Report" href="/dashboard/anonymous-report" active={location.pathname === '/dashboard/anonymous-report'} />
+                    <NavItem label="Heat Map" href="/dashboard/map" active={location.pathname === '/dashboard/map'} />
                     <NavItem label="Constituency" href="/dashboard/constituency" active={location.pathname === '/dashboard/constituency'} />
                     <NavItem label="News" href="/news" active={location.pathname === '/news'} />
                     <NavItem label="AI Analyst" href="/dashboard/ai-analyst" active={location.pathname === '/dashboard/ai-analyst'} />

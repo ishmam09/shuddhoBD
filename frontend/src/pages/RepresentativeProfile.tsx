@@ -12,6 +12,7 @@ export default function RepresentativeProfile() {
     const { user } = useAuth();
     const [dbSeat, setDbSeat] = useState<any>(null);
     const [ctiData, setCtiData] = useState<any>(null);
+    const [actualProjects, setActualProjects] = useState<any[]>([]);
     const [showCtiDetails, setShowCtiDetails] = useState(false);
     const [loading, setLoading] = useState(true);
     const [isDownloading, setIsDownloading] = useState(false);
@@ -21,7 +22,7 @@ export default function RepresentativeProfile() {
     const fetchData = async () => {
         try {
             const API_BASE = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:5001/api`;
-            
+
             // Fetch Seat Info
             const seatRes = await fetch(`${API_BASE}/seats`, { credentials: "include" });
             const seatData = await seatRes.json();
@@ -32,6 +33,13 @@ export default function RepresentativeProfile() {
             const ctiRes = await fetch(`${API_BASE}/reports/cti/${seatId}`, { credentials: "include" });
             const cti = await ctiRes.json();
             if (ctiRes.ok) setCtiData(cti);
+
+            // Fetch actual projects for this seat
+            const projRes = await fetch(`${API_BASE}/projects`);
+            if (projRes.ok) {
+                const allProj = await projRes.json();
+                setActualProjects(allProj.filter((p: any) => p.seatId === Number(seatId)));
+            }
 
         } catch (err) {
             console.error(err);
@@ -131,7 +139,6 @@ export default function RepresentativeProfile() {
     // Prefer database values if they exist, otherwise fallback to mock data
     const budgetAllocation = dbSeat?.budgetAllocation || rep.budgetAllocation;
     const sectors = (dbSeat?.sectors && Object.keys(dbSeat.sectors).length > 0) ? dbSeat.sectors : rep.sectors;
-    const projects = (dbSeat?.projects && dbSeat.projects.length > 0) ? dbSeat.projects : rep.projects;
     const { experience } = rep;
 
     // Fixed color mapping for the 8 sectors
@@ -193,7 +200,7 @@ export default function RepresentativeProfile() {
                     </button>
 
                     {user?.role === 'admin' && (
-                        <button 
+                        <button
                             onClick={() => setIsEditModalOpen(true)}
                             className="btn-primary flex items-center gap-2 py-2 px-4 rounded-xl text-sm"
                         >
@@ -275,27 +282,24 @@ export default function RepresentativeProfile() {
                             {ctiData && (
                                 <div className="w-full mt-4 bg-slate-900 border border-slate-700/50 rounded-2xl p-5 shadow-inner relative overflow-hidden group">
                                     {/* Background decorative shield icon */}
-                                    <Shield className={`absolute -right-4 -bottom-4 w-24 h-24 opacity-5 transition-transform duration-700 group-hover:scale-110 group-hover:rotate-12 ${
-                                        ctiData.status === 'Good' ? 'text-green-500' :
-                                        ctiData.status === 'Moderate' ? 'text-amber-500' : 'text-red-500'
-                                    }`} />
-                                    
+                                    <Shield className={`absolute -right-4 -bottom-4 w-24 h-24 opacity-5 transition-transform duration-700 group-hover:scale-110 group-hover:rotate-12 ${ctiData.status === 'Good' ? 'text-green-500' :
+                                            ctiData.status === 'Moderate' ? 'text-amber-500' : 'text-red-500'
+                                        }`} />
+
                                     <div className="relative z-10">
                                         <div className="flex items-center justify-between mb-4">
                                             <div className="flex items-center gap-2">
-                                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                                                    ctiData.status === 'Good' ? 'bg-green-500/20 text-green-400' :
-                                                    ctiData.status === 'Moderate' ? 'bg-amber-500/20 text-amber-400' : 'bg-red-500/20 text-red-400'
-                                                }`}>
+                                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${ctiData.status === 'Good' ? 'bg-green-500/20 text-green-400' :
+                                                        ctiData.status === 'Moderate' ? 'bg-amber-500/20 text-amber-400' : 'bg-red-500/20 text-red-400'
+                                                    }`}>
                                                     <Shield className="w-4 h-4" />
                                                 </div>
                                                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Civic Trust Index</span>
                                             </div>
                                             <div className="flex flex-col items-end">
-                                                <span className={`text-[10px] font-black uppercase tracking-widest ${
-                                                    ctiData.status === 'Good' ? 'text-green-500' :
-                                                    ctiData.status === 'Moderate' ? 'text-amber-500' : 'text-red-500'
-                                                }`}>
+                                                <span className={`text-[10px] font-black uppercase tracking-widest ${ctiData.status === 'Good' ? 'text-green-500' :
+                                                        ctiData.status === 'Moderate' ? 'text-amber-500' : 'text-red-500'
+                                                    }`}>
                                                     {ctiData.status}
                                                 </span>
                                             </div>
@@ -310,11 +314,10 @@ export default function RepresentativeProfile() {
 
                                         {/* Progress Bar */}
                                         <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden mb-4">
-                                            <div 
-                                                className={`h-full transition-all duration-1000 ease-out ${
-                                                    ctiData.status === 'Good' ? 'bg-green-500' :
-                                                    ctiData.status === 'Moderate' ? 'bg-amber-500' : 'bg-red-500'
-                                                }`}
+                                            <div
+                                                className={`h-full transition-all duration-1000 ease-out ${ctiData.status === 'Good' ? 'bg-green-500' :
+                                                        ctiData.status === 'Moderate' ? 'bg-amber-500' : 'bg-red-500'
+                                                    }`}
                                                 style={{ width: `${ctiData.score}%` }}
                                             />
                                         </div>
@@ -323,7 +326,7 @@ export default function RepresentativeProfile() {
 
                                         {/* Dropdown / Expandable Section */}
                                         <div className="mt-4 pt-4 border-t border-slate-800">
-                                            <button 
+                                            <button
                                                 onClick={() => setShowCtiDetails(!showCtiDetails)}
                                                 className="w-full flex items-center justify-between text-[10px] font-bold text-indigo-400 hover:text-indigo-300 transition-colors uppercase tracking-widest"
                                             >
@@ -444,46 +447,61 @@ export default function RepresentativeProfile() {
                         </div>
                     </div>
 
-                    {/* PRIORITY PROJECTS LIST */}
+                    {/* PROJECTS LIST */}
                     <div className="bg-shuddho-card border border-slate-700/50 rounded-3xl p-6 shadow-xl">
                         <div className="flex items-center gap-3 mb-6 border-b border-slate-700/50 pb-4">
                             <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400">
                                 <Target className="w-5 h-5" />
                             </div>
                             <div>
-                                <h3 className="text-xl font-bold text-white">Priority Projects</h3>
-                                <p className="text-sm text-slate-400">Key initiatives focused on by the representative ({projects?.length || 0})</p>
+                                <h3 className="text-xl font-bold text-white">Projects</h3>
+                                <p className="text-sm text-slate-400">Initiatives focused on by the representative ({actualProjects.length})</p>
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {projects && projects.map((project: string, idx: number) => (
-                                <div
-                                    key={idx}
-                                    className="flex items-start gap-3 bg-slate-800/30 p-4 rounded-xl border border-slate-700/30 hover:border-shuddho-neon/50 transition-colors group"
-                                >
-                                    <div className="text-shuddho-neon font-bold opacity-50 bg-shuddho-neon/10 w-6 h-6 rounded flex items-center justify-center shrink-0">
-                                        {idx + 1}
+                        {actualProjects.length > 0 ? (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {actualProjects.map((project: any, idx: number) => (
+                                    <div
+                                        key={project._id || idx}
+                                        onClick={() => navigate('/dashboard/project-status', { state: { selectedProjectId: project._id } })}
+                                        className="flex items-start gap-3 bg-slate-800/30 p-4 rounded-xl border border-slate-700/30 hover:border-shuddho-neon/50 cursor-pointer transition-colors group"
+                                    >
+                                        <div className="text-shuddho-neon font-bold opacity-50 bg-shuddho-neon/10 w-6 h-6 rounded flex items-center justify-center shrink-0">
+                                            {idx + 1}
+                                        </div>
+                                        <div className="flex flex-col gap-1">
+                                            <p className="text-slate-200 text-sm leading-snug group-hover:text-white transition-colors">
+                                                {project.name}
+                                            </p>
+                                            <span className={`text-[10px] font-bold uppercase tracking-wider ${project.status === 'completed' ? 'text-emerald-400' :
+                                                    project.status === 'in progress' ? 'text-shuddho-neon' :
+                                                        project.status === 'on hold' ? 'text-amber-500' : 'text-blue-400'
+                                                }`}>
+                                                {project.status}
+                                            </span>
+                                        </div>
                                     </div>
-                                    <p className="text-slate-200 text-sm leading-snug group-hover:text-white transition-colors">
-                                        {project}
-                                    </p>
-                                </div>
-                            ))}
-                        </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="text-center py-10 bg-slate-800/20 rounded-xl border border-slate-700/30 border-dashed">
+                                <p className="text-slate-400 italic">No projects allotted yet.</p>
+                            </div>
+                        )}
                     </div>
 
                 </div>
             </div>
 
             {isEditModalOpen && (
-                <AdminSeatModal 
-                    seat={dbSeat} 
-                    onClose={() => setIsEditModalOpen(false)} 
+                <AdminSeatModal
+                    seat={dbSeat}
+                    onClose={() => setIsEditModalOpen(false)}
                     onSaved={() => {
                         setIsEditModalOpen(false);
                         fetchData();
-                    }} 
+                    }}
                     mode="profile"
                 />
             )}

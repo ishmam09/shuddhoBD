@@ -4,7 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import { Navigate, useNavigate } from "react-router-dom";
 import { Mail, Lock, User, Phone, CreditCard, MapPin, ShieldAlert } from "lucide-react";
 
-type AuthMode = "login" | "register";
+type AuthMode = "login" | "register" | "forgot_password";
 
 const API_BASE = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:5001/api`;
 
@@ -42,6 +42,58 @@ export default function AuthPage() {
         e.preventDefault();
         setLoading(true);
         setError(null);
+
+        if (mode === "forgot_password") {
+            if (step === 1) {
+                try {
+                    const res = await fetch(`${API_BASE}/auth/forgot-password-otp`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ email: form.email }),
+                    });
+                    if (!res.ok) {
+                        const data = await res.json().catch(() => null);
+                        throw new Error(data?.message || "Failed to send reset OTP");
+                    }
+                    setStep(2);
+                } catch (err: any) {
+                    setError(err.message || "Failed to send reset OTP");
+                } finally {
+                    setLoading(false);
+                }
+                return;
+            } else if (step === 2) {
+                if (form.password !== form.confirmPassword) {
+                    setError("Passwords do not match");
+                    setLoading(false);
+                    return;
+                }
+                try {
+                    const res = await fetch(`${API_BASE}/auth/reset-password`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ 
+                            email: form.email, 
+                            otp: form.otp, 
+                            newPassword: form.password 
+                        }),
+                    });
+                    if (!res.ok) {
+                        const data = await res.json().catch(() => null);
+                        throw new Error(data?.message || "Failed to reset password");
+                    }
+                    setMode("login");
+                    setStep(1);
+                    setForm(prev => ({ ...prev, password: "", confirmPassword: "", otp: "" }));
+                    alert("Password reset successfully. Please login with your new password.");
+                } catch (err: any) {
+                    setError(err.message || "Failed to reset password");
+                } finally {
+                    setLoading(false);
+                }
+                return;
+            }
+        }
 
         if (mode === "register" && step === 1) {
             if (form.password !== form.confirmPassword) {
@@ -109,6 +161,8 @@ export default function AuthPage() {
     };
 
     const isLogin = mode === "login";
+    const isRegister = mode === "register";
+    const isForgot = mode === "forgot_password";
 
     return (
         <div className="min-h-screen bg-[#020617] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
@@ -129,17 +183,19 @@ export default function AuthPage() {
 
                         <div className="text-center mb-8">
                             <h1 className="text-2xl md:text-3xl font-extrabold text-white tracking-tight">
-                                {isLogin ? "Good to see you again" : "Create your account"}
+                                {isLogin ? "Good to see you again" : isForgot ? "Reset your password" : "Create your account"}
                             </h1>
                             <p className="mt-2 text-sm text-slate-400">
                                 {isLogin
                                     ? "Sign in with your civic account to continue."
-                                    : "Join as a citizen. Analyst and admin access are granted separately."}
+                                    : isForgot
+                                        ? "Enter your email to receive a password reset code."
+                                        : "Join as a citizen. Analyst and admin access are granted separately."}
                             </p>
                         </div>
 
                         <form onSubmit={handleSubmit} className="space-y-6">
-                            {!isLogin && step === 1 && (
+                            {isRegister && step === 1 && (
                                 <div className="space-y-5">
                                     <div className="flex items-center gap-2 mb-2 text-indigo-300 font-bold uppercase tracking-widest text-xs">
                                         <ShieldAlert className="w-4 h-4" />
@@ -196,9 +252,9 @@ export default function AuthPage() {
                                 </div>
                             )}
 
-                            {(isLogin || step === 1) && (
+                            {(isLogin || (isRegister && step === 1)) && (
                                 <div className="space-y-5">
-                                    {!isLogin && (
+                                    {isRegister && (
                                         <div className="flex items-center gap-2 mb-2 text-indigo-300 font-bold uppercase tracking-widest text-xs">
                                             <Lock className="w-4 h-4" />
                                             <h2>Account Credentials</h2>
@@ -220,7 +276,7 @@ export default function AuthPage() {
                                         </div>
                                     </div>
 
-                                    {!isLogin && (
+                                    {isRegister && (
                                         <div className="space-y-2">
                                             <label className="flex items-center gap-2 text-[10px] font-bold text-indigo-300 uppercase tracking-wider" htmlFor="confirmPassword">Confirm password</label>
                                             <div className="relative">
@@ -232,7 +288,7 @@ export default function AuthPage() {
                                 </div>
                             )}
 
-                            {!isLogin && step === 2 && (
+                            {isRegister && step === 2 && (
                                 <div className="space-y-4 p-6 bg-indigo-500/5 border-2 border-indigo-500/20 rounded-2xl animate-in zoom-in-95 duration-300">
                                     <div className="flex items-center gap-3 text-indigo-300">
                                         <Lock className="w-5 h-5" />
@@ -243,6 +299,54 @@ export default function AuthPage() {
                                         <input id="otp" name="otp" type="text" required value={form.otp} onChange={handleChange} className="w-full bg-black/40 border-2 border-indigo-500/30 rounded-xl px-4 py-4 text-center text-3xl font-mono tracking-[0.5em] text-white focus:border-indigo-500 focus:outline-none placeholder:text-slate-800" placeholder="· · · · · ·" maxLength={6} />
                                     </div>
                                     <p className="text-[10px] text-slate-400 text-center">We've sent a code to <span className="text-white font-medium">{form.email}</span></p>
+                                </div>
+                            )}
+
+                            {isForgot && step === 1 && (
+                                <div className="space-y-5">
+                                    <div className="flex items-center gap-2 mb-2 text-indigo-300 font-bold uppercase tracking-widest text-xs">
+                                        <Lock className="w-4 h-4" />
+                                        <h2>Account Recovery</h2>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="flex items-center gap-2 text-[10px] font-bold text-indigo-300 uppercase tracking-wider" htmlFor="email">Registered Email</label>
+                                        <div className="relative">
+                                            <Mail className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                                            <input id="email" name="email" type="email" required value={form.email} onChange={handleChange} className="w-full rounded-2xl border-2 border-slate-700/50 bg-black/40 pl-12 pr-5 py-4 text-white placeholder:text-slate-600 focus:border-indigo-500 focus:bg-slate-800/80 focus:outline-none transition-all" placeholder="e.g. citizen@shuddhobd.com" />
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {isForgot && step === 2 && (
+                                <div className="space-y-5">
+                                    <div className="space-y-4 p-6 bg-indigo-500/5 border-2 border-indigo-500/20 rounded-2xl animate-in zoom-in-95 duration-300">
+                                        <div className="flex items-center gap-3 text-indigo-300">
+                                            <Lock className="w-5 h-5" />
+                                            <h3 className="font-bold text-[10px] uppercase tracking-widest">Verify Reset Code</h3>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest" htmlFor="otp">Enter 6-digit Code</label>
+                                            <input id="otp" name="otp" type="text" required value={form.otp} onChange={handleChange} className="w-full bg-black/40 border-2 border-indigo-500/30 rounded-xl px-4 py-4 text-center text-3xl font-mono tracking-[0.5em] text-white focus:border-indigo-500 focus:outline-none placeholder:text-slate-800" placeholder="· · · · · ·" maxLength={6} />
+                                        </div>
+                                        <p className="text-[10px] text-slate-400 text-center">We've sent a code to <span className="text-white font-medium">{form.email}</span></p>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <label className="flex items-center gap-2 text-[10px] font-bold text-indigo-300 uppercase tracking-wider" htmlFor="password">New Password</label>
+                                        <div className="relative">
+                                            <Lock className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                                            <input id="password" name="password" type="password" required minLength={6} value={form.password} onChange={handleChange} className="w-full rounded-2xl border-2 border-slate-700/50 bg-black/40 pl-12 pr-5 py-4 text-white placeholder:text-slate-600 focus:border-indigo-500 focus:bg-slate-800/80 focus:outline-none transition-all" placeholder="At least 6 characters" />
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <label className="flex items-center gap-2 text-[10px] font-bold text-indigo-300 uppercase tracking-wider" htmlFor="confirmPassword">Confirm New Password</label>
+                                        <div className="relative">
+                                            <Lock className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                                            <input id="confirmPassword" name="confirmPassword" type="password" required minLength={6} value={form.confirmPassword} onChange={handleChange} className="w-full rounded-2xl border-2 border-slate-700/50 bg-black/40 pl-12 pr-5 py-4 text-white placeholder:text-slate-600 focus:border-indigo-500 focus:bg-slate-800/80 focus:outline-none transition-all" placeholder="Type new password again" />
+                                        </div>
+                                    </div>
                                 </div>
                             )}
 
@@ -265,19 +369,23 @@ export default function AuthPage() {
                                                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                             </svg>
-                                            {isLogin ? "Signing in..." : step === 1 ? "Sending OTP..." : "Creating account..."}
+                                            {isLogin ? "Signing in..." : isForgot ? "Processing..." : step === 1 ? "Sending OTP..." : "Creating account..."}
                                         </>
                                     )
                                     : isLogin
                                         ? "Sign in Securely"
-                                        : step === 1 ? "Continue" : "Verify & Create Account"}
+                                        : isForgot
+                                            ? (step === 1 ? "Send Reset Code" : "Update Password")
+                                            : step === 1 ? "Continue" : "Verify & Create Account"}
                             </button>
 
-                            <div className="pt-4 flex items-center justify-between text-sm text-slate-400 border-t border-slate-700/50 mt-6">
-                                <button type="button" className="text-xs hover:text-white transition-colors">
-                                    Forgot password?
-                                </button>
-                                <div className="text-xs">
+                            <div className="pt-4 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-slate-400 border-t border-slate-700/50 mt-6">
+                                {isLogin && (
+                                    <button type="button" onClick={() => { setMode("forgot_password"); setStep(1); setError(null); setForm(prev => ({ ...prev, password: "", confirmPassword: "", otp: "" })) }} className="text-xs hover:text-white transition-colors">
+                                        Forgot password?
+                                    </button>
+                                )}
+                                <div className="text-xs ml-auto">
                                     {isLogin ? (
                                         <>
                                             Don't have an account?{" "}

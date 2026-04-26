@@ -1,14 +1,16 @@
-import React, { useState } from 'react';
-import { X, Plus, Save, Briefcase, User, MapPin, Calendar, DollarSign, Flag } from 'lucide-react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
+import { X, Plus, Save, Briefcase, User, MapPin, Calendar, DollarSign, Flag, ChevronDown, Search } from 'lucide-react';
+import { constituenciesData } from '../data/constituencies';
 
 const API_BASE = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:5001/api`;
 
 interface CreateProjectModalProps {
   onClose: () => void;
   onSuccess: () => void;
+  initialSeatId?: string;
 }
 
-export default function CreateProjectModal({ onClose, onSuccess }: CreateProjectModalProps) {
+export default function CreateProjectModal({ onClose, onSuccess, initialSeatId }: CreateProjectModalProps) {
   const [formData, setFormData] = useState({
     projectId: '',
     name: '',
@@ -20,10 +22,37 @@ export default function CreateProjectModal({ onClose, onSuccess }: CreateProject
     budget: '',
     actualCompletion: '0',
     milestone: 'Project Initialized',
-    seatId: '185'
+    seatId: initialSeatId || ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+
+  const [isSeatDropdownOpen, setIsSeatDropdownOpen] = useState(false);
+  const [seatSearch, setSeatSearch] = useState("");
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const filteredSeats = useMemo(() => {
+      if (!seatSearch) return constituenciesData;
+      const query = seatSearch.toLowerCase();
+      return constituenciesData.filter(s => 
+          s.name.toLowerCase().includes(query) || 
+          s.seatId.toString().includes(query)
+      );
+  }, [seatSearch]);
+
+  const selectedSeat = useMemo(() => 
+      constituenciesData.find(s => s.seatId.toString() === formData.seatId),
+  [formData.seatId]);
+
+  useEffect(() => {
+      const handleClickOutside = (event: MouseEvent) => {
+          if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+              setIsSeatDropdownOpen(false);
+          }
+      };
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -139,19 +168,72 @@ export default function CreateProjectModal({ onClose, onSuccess }: CreateProject
               />
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-2 relative" ref={dropdownRef}>
               <label className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
                 <Flag className="w-3 h-3" /> Seat ID
               </label>
-              <input
-                type="number"
-                name="seatId"
-                placeholder="e.g. 185"
-                value={formData.seatId}
-                onChange={handleChange}
-                className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-white outline-none focus:border-shuddho-neon transition-colors"
-                required
-              />
+              <div 
+                  onClick={() => setIsSeatDropdownOpen(!isSeatDropdownOpen)}
+                  className={`w-full bg-slate-800 border ${isSeatDropdownOpen ? 'border-shuddho-neon' : 'border-slate-700'} rounded-xl p-3 text-white cursor-pointer flex items-center justify-between transition-colors`}
+              >
+                  <div className="flex items-center gap-3 overflow-hidden">
+                      {selectedSeat ? (
+                          <>
+                              <span className="text-xs font-black px-2 py-1 bg-shuddho-neon/20 text-shuddho-neon rounded-md whitespace-nowrap">Seat #{selectedSeat.seatId}</span>
+                              <span className="text-white font-bold truncate" title={selectedSeat.name}>{selectedSeat.name}</span>
+                          </>
+                      ) : (
+                          <span className="text-slate-400">Select a Constituency...</span>
+                      )}
+                  </div>
+                  <ChevronDown className={`w-5 h-5 text-slate-500 shrink-0 transition-transform duration-300 ${isSeatDropdownOpen ? 'rotate-180' : ''}`} />
+              </div>
+
+              {isSeatDropdownOpen && (
+                  <div className="absolute top-[calc(100%+4px)] left-0 right-0 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-[100] overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                      <div className="p-3 border-b border-slate-800 bg-slate-800/50">
+                          <div className="relative">
+                              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                              <input 
+                                  autoFocus
+                                  type="text"
+                                  placeholder="Search by name or seat number..."
+                                  value={seatSearch}
+                                  onChange={(e) => setSeatSearch(e.target.value)}
+                                  className="w-full bg-slate-900 border border-slate-700 rounded-lg pl-9 pr-3 py-2 text-sm text-white focus:outline-none focus:border-shuddho-neon transition-colors"
+                                  onClick={(e) => e.stopPropagation()}
+                              />
+                          </div>
+                      </div>
+                      <div className="max-h-[250px] overflow-y-auto custom-scrollbar">
+                          {filteredSeats.length > 0 ? (
+                              filteredSeats.map((seat) => (
+                                  <div 
+                                      key={seat.id}
+                                      onClick={() => {
+                                          setFormData({ ...formData, seatId: seat.seatId.toString() });
+                                          setIsSeatDropdownOpen(false);
+                                          setSeatSearch("");
+                                      }}
+                                      className={`px-4 py-3 hover:bg-shuddho-neon/10 cursor-pointer flex items-center justify-between group transition-colors ${formData.seatId === seat.seatId.toString() ? 'bg-shuddho-neon/5' : ''}`}
+                                  >
+                                      <div className="flex items-center gap-3 overflow-hidden">
+                                          <span className="text-[10px] font-black text-slate-500 group-hover:text-shuddho-neon whitespace-nowrap">#{seat.seatId}</span>
+                                          <span className={`text-sm font-bold ${formData.seatId === seat.seatId.toString() ? 'text-shuddho-neon' : 'text-slate-300 group-hover:text-white'} truncate`} title={seat.name}>{seat.name}</span>
+                                      </div>
+                                      {formData.seatId === seat.seatId.toString() && (
+                                          <div className="w-2 h-2 rounded-full bg-shuddho-neon shadow-[0_0_10px_rgba(0,255,204,0.5)] shrink-0"></div>
+                                      )}
+                                  </div>
+                              ))
+                          ) : (
+                              <div className="p-6 text-center text-slate-500 text-xs italic">
+                                  No constituencies found for "{seatSearch}"
+                              </div>
+                          )}
+                      </div>
+                  </div>
+              )}
             </div>
 
             <div className="space-y-2">

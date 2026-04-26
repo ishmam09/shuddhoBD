@@ -1,8 +1,0 @@
-﻿295c0f9 18 minutes ago Constituency
-62767d1 14 hours ago small tweak
-25c48d6 14 hours ago Refactor asset dashboard UI and integrate dynamic candidate photo configurations
-286f382 5 weeks ago Cloudinary Upload
-e79f98d 5 weeks ago Anonymous report
-f77ab1c 5 weeks ago Merge branch 'main' of https://github.com/ishmam09/shuddhoBD
-65f197d 5 weeks ago feat: complete UI rebuild and intelligent report classification engine
-b5ac91b 5 weeks ago Initial commit of ShuddhoBD

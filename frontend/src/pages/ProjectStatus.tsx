@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Clock, AlertTriangle, ShieldCheck, X } from 'lucide-react';
+import { Clock, AlertTriangle, ShieldCheck, X, ChevronDown, Search } from 'lucide-react';
 import ChallengeModal from '../components/ChallengeModal';
 import AdminReviewModal from '../components/AdminReviewModal';
 import CreateProjectModal from '../components/CreateProjectModal';
 import UpdateProgressModal from '../components/UpdateProgressModal';
+import { constituenciesData } from '../data/constituencies';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -42,16 +43,45 @@ interface Project {
   milestone: string;
   phases: any[];
   challenges?: any[];
+  seatId?: number;
 }
 
 export default function ProjectStatus() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [isChallengeModalOpen, setIsChallengeModalOpen] = useState(false);
   const [isAdminReviewModalOpen, setIsAdminReviewModalOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const filteredProjects = useMemo(() => {
+    if (!searchQuery) return projects;
+    const q = searchQuery.toLowerCase();
+    return projects.filter(p => {
+      const seat = constituenciesData.find(s => s.seatId === p.seatId);
+      const seatName = seat ? seat.name.toLowerCase() : '';
+      const seatIdStr = p.seatId ? p.seatId.toString() : '';
+      const projName = p.name.toLowerCase();
+      
+      return projName.includes(q) || seatName.includes(q) || seatIdStr.includes(q);
+    });
+  }, [projects, searchQuery]);
 
   const fetchProjects = async () => {
     try {
@@ -74,6 +104,17 @@ export default function ProjectStatus() {
     const interval = setInterval(fetchProjects, 10000); // auto update every 10s
     return () => clearInterval(interval);
   }, [selectedProject?._id]);
+
+  useEffect(() => {
+    if (projects.length > 0 && location.state?.selectedProjectId) {
+      const proj = projects.find(p => p._id === location.state.selectedProjectId);
+      if (proj) {
+        setSelectedProject(proj);
+        // Clear state so it doesn't persist if user changes project later
+        navigate(location.pathname, { replace: true, state: {} });
+      }
+    }
+  }, [projects, location.state, location.pathname, navigate]);
 
   const handleSelectProject = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const proj = projects.find(p => p._id === e.target.value);
@@ -155,16 +196,75 @@ export default function ProjectStatus() {
               + Add Project
             </button>
           )}
-          <select
-            className="w-auto min-w-[280px] max-w-[450px] bg-slate-800 border border-slate-700 text-white rounded-lg p-3 outline-none focus:border-shuddho-neon transition-colors cursor-pointer"
-            onChange={handleSelectProject}
-            value={selectedProject?._id || ""}
-          >
-            <option value="">-- Select a Project --</option>
-            {projects.map((p) => (
-              <option key={p._id} value={p._id}>{p.name}</option>
-            ))}
-          </select>
+          <div className="relative z-20" ref={dropdownRef}>
+            <div 
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              className={`w-auto min-w-[280px] max-w-[450px] bg-slate-800 border ${isDropdownOpen ? 'border-shuddho-neon' : 'border-slate-700'} text-white rounded-lg p-3 cursor-pointer flex items-center justify-between transition-colors`}
+            >
+              <div className="flex items-center gap-3 overflow-hidden truncate">
+                {selectedProject ? (
+                  (() => {
+                    const seat = constituenciesData.find(s => s.seatId === selectedProject.seatId);
+                    const seatPrefix = seat ? `[${seat.name}] ` : '';
+                    return <span><span className="text-shuddho-neon font-bold">{seatPrefix}</span>{selectedProject.name}</span>;
+                  })()
+                ) : (
+                  <span className="text-slate-400">-- Select a Project --</span>
+                )}
+              </div>
+              <ChevronDown className={`w-5 h-5 text-slate-500 shrink-0 transition-transform duration-300 ${isDropdownOpen ? 'rotate-180' : ''}`} />
+            </div>
+
+            {isDropdownOpen && (
+              <div className="absolute top-[calc(100%+4px)] right-0 w-[450px] max-w-[90vw] bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-[100] overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                <div className="p-3 border-b border-slate-800 bg-slate-800/50">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                    <input 
+                      autoFocus
+                      type="text"
+                      placeholder="Search by seat, project name..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-lg pl-9 pr-3 py-2 text-sm text-white focus:outline-none focus:border-shuddho-neon transition-colors"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </div>
+                </div>
+                <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
+                  {filteredProjects.length > 0 ? (
+                    filteredProjects.map((p) => {
+                      const seat = constituenciesData.find(s => s.seatId === p.seatId);
+                      const isSelected = selectedProject?._id === p._id;
+                      return (
+                        <div 
+                          key={p._id}
+                          onClick={() => {
+                            setSelectedProject(p);
+                            setIsDropdownOpen(false);
+                            setSearchQuery("");
+                          }}
+                          className={`px-4 py-3 hover:bg-shuddho-neon/10 cursor-pointer flex items-center justify-between group transition-colors ${isSelected ? 'bg-shuddho-neon/5' : ''}`}
+                        >
+                          <div className="flex flex-col gap-1 overflow-hidden">
+                            {seat && <span className="text-[10px] font-black text-shuddho-neon uppercase tracking-wider">{seat.name} (Seat {seat.seatId})</span>}
+                            <span className={`text-sm font-bold ${isSelected ? 'text-white' : 'text-slate-300 group-hover:text-white'} truncate`} title={p.name}>{p.name}</span>
+                          </div>
+                          {isSelected && (
+                            <div className="w-2 h-2 rounded-full bg-shuddho-neon shadow-[0_0_10px_rgba(0,255,204,0.5)] shrink-0 ml-3"></div>
+                          )}
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div className="p-6 text-center text-slate-500 text-xs italic">
+                      No projects found for "{searchQuery}"
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </header>
 

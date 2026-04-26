@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { X, Plus, Trash2, PieChart, Target, Landmark } from "lucide-react";
 import { SECTORS_LIST } from "../data/constituencies";
+import CreateProjectModal from "./CreateProjectModal";
 
 const API_BASE = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:5001/api`;
 
@@ -29,6 +30,7 @@ export default function AdminSeatModal({ seat, onClose, onSaved, mode = 'assets'
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [isCreateProjectOpen, setIsCreateProjectOpen] = useState(false);
 
     useEffect(() => {
         if (seat) {
@@ -336,41 +338,23 @@ export default function AdminSeatModal({ seat, onClose, onSaved, mode = 'assets'
                                     </div>
                                 </div>
 
-                                {/* --- PRIORITY PROJECTS SECTION --- */}
+                                {/* --- PROJECTS SECTION --- */}
                                 <div className="pt-6 border-t border-slate-700/50 space-y-6">
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-3">
                                             <Target className="w-5 h-5 text-emerald-400" />
-                                            <h3 className="text-lg font-bold text-white tracking-tight">Priority Projects</h3>
+                                            <h3 className="text-lg font-bold text-white tracking-tight">Projects</h3>
                                         </div>
-                                        <button type="button" onClick={addProject} className="text-xs font-bold text-indigo-400 hover:text-indigo-300 flex items-center gap-1 bg-indigo-500/10 px-3 py-1.5 rounded-lg border border-indigo-500/20 transition-all">
+                                        <button type="button" onClick={() => setIsCreateProjectOpen(true)} className="text-xs font-bold text-indigo-400 hover:text-indigo-300 flex items-center gap-1 bg-indigo-500/10 px-3 py-1.5 rounded-lg border border-indigo-500/20 transition-all">
                                             <Plus className="w-3 h-3" /> Add Project
                                         </button>
                                     </div>
 
                                     <div className="space-y-3">
-                                        {form.projects.map((project, idx) => (
-                                            <div key={idx} className="flex gap-2 group">
-                                                <div className="flex-1 relative">
-                                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-600">{idx + 1}</span>
-                                                    <input
-                                                        value={project}
-                                                        onChange={(e) => updateProject(idx, e.target.value)}
-                                                        className="w-full bg-slate-800/50 border border-slate-700 rounded-xl pl-8 pr-4 py-3 text-white text-sm focus:outline-none focus:border-emerald-500 transition-all"
-                                                        placeholder="Describe project goal..."
-                                                    />
-                                                </div>
-                                                <button type="button" onClick={() => removeProject(idx)} className="p-3 bg-slate-800 text-slate-500 hover:text-rose-400 hover:bg-rose-400/10 rounded-xl transition-all">
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
-                                            </div>
-                                        ))}
-                                        {form.projects.length === 0 && (
-                                            <div className="py-8 border-2 border-dashed border-slate-800 rounded-2xl flex flex-col items-center justify-center text-slate-600">
-                                                <Target className="w-8 h-8 mb-2 opacity-20" />
-                                                <p className="text-xs font-medium uppercase tracking-widest opacity-40">No projects added yet</p>
-                                            </div>
-                                        )}
+                                        <div className="py-8 border-2 border-dashed border-slate-800 rounded-2xl flex flex-col items-center justify-center text-slate-600">
+                                            <Target className="w-8 h-8 mb-2 opacity-20" />
+                                            <p className="text-xs font-medium text-center tracking-widest opacity-40">Projects are managed globally.<br/>Click "Add Project" to create a new one.</p>
+                                        </div>
                                     </div>
                                 </div>
                             </>
@@ -391,6 +375,17 @@ export default function AdminSeatModal({ seat, onClose, onSaved, mode = 'assets'
                     </div>
                 </form>
             </div>
+
+            {isCreateProjectOpen && (
+                <CreateProjectModal 
+                    initialSeatId={seat?.order?.toString()}
+                    onClose={() => setIsCreateProjectOpen(false)}
+                    onSuccess={() => {
+                        setIsCreateProjectOpen(false);
+                        onSaved();
+                    }}
+                />
+            )}
         </div>
     );
 }

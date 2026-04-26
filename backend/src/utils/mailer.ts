@@ -103,3 +103,38 @@ export const sendProfileUpdateOTPEmail = async (email: string, otp: string) => {
     return false;
   }
 };
+
+export const sendPasswordResetOTPEmail = async (email: string, otp: string) => {
+  if (!ENV.smtpUser || !ENV.smtpPass) {
+    console.warn(`[DEV WARNING] SMTP credentials not fully configured. The Password Reset OTP for ${email} is: ${otp}`);
+  }
+
+  try {
+    const info = await transporter.sendMail({
+      from: `"ShuddhoBD Support" <${ENV.smtpUser || "noreply@shuddhobd.com"}>`,
+      to: email,
+      subject: "Password Reset Request - ShuddhoBD",
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;">
+          <div style="background-color: #f43f5e; padding: 20px; text-align: center;">
+            <h2 style="color: white; margin: 0;">Password Reset</h2>
+          </div>
+          <div style="padding: 30px;">
+            <p>You recently requested to reset your password for your ShuddhoBD account.</p>
+            <p>Use the following 6-digit code to reset your password. This code is only valid for the next <strong>10 minutes</strong>.</p>
+            <div style="background-color: #f3f4f6; padding: 20px; text-align: center; border-radius: 8px; margin: 24px 0;">
+              <span style="font-size: 36px; font-weight: bold; letter-spacing: 6px; color: #f43f5e; font-family: monospace;">${otp}</span>
+            </div>
+            <p style="font-size: 14px; color: #6b7280;">If you did not request a password reset, please ignore this email or contact support if you have concerns.</p>
+          </div>
+        </div>
+      `,
+    });
+
+    console.log("Password reset OTP email sent: %s", info.messageId);
+    return true;
+  } catch (error) {
+    console.error("Error sending password reset OTP email:", error);
+    return false;
+  }
+};

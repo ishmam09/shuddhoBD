@@ -3,7 +3,7 @@ import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
 import { User } from "../models/User";
 import { OTP } from "../models/OTP";
-import { sendOTPVerificationEmail, sendProfileUpdateOTPEmail } from "../utils/mailer";
+import { sendOTPVerificationEmail, sendProfileUpdateOTPEmail, sendPasswordResetOTPEmail } from "../utils/mailer";
 import { ENV } from "../config/env";
 import { AuthRequest, authMiddleware } from "../middleware/auth";
 import { uploadProfile } from "../utils/cloudinary";
@@ -223,6 +223,59 @@ router.post("/login", async (req: AuthRequest, res: Response) => {
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: "Failed to login" });
+  }
+});
+
+router.post("/forgot-password-otp", async (req: AuthRequest, res: Response) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ message: "Email is required" });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: "No account found with this email" });
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    await OTP.deleteMany({ email });
+    await OTP.create({ email, otp });
+    await sendPasswordResetOTPEmail(email, otp);
+
+    return res.json({ message: "Password reset OTP sent successfully" });
+  } catch (error) {
+    console.error("Forgot Password OTP Error:", error);
+    return res.status(500).json({ message: "Failed to send reset OTP" });
+  }
+});
+
+router.post("/reset-password", async (req: AuthRequest, res: Response) => {
+  try {
+    const { email, otp, newPassword } = req.body;
+    if (!email || !otp || !newPassword) {
+      return res.status(400).json({ message: "Email, OTP, and new password are required" });
+    }
+
+    const otpRecord = await OTP.findOne({ email, otp });
+    if (!otpRecord) {
+      return res.status(400).json({ message: "Invalid or expired OTP" });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    user.password = newPassword;
+    await user.save(); // This triggers the pre-save hook to hash the new password
+
+    await OTP.deleteMany({ email });
+
+    return res.json({ message: "Password has been reset successfully" });
+  } catch (error) {
+    console.error("Reset Password Error:", error);
+    return res.status(500).json({ message: "Failed to reset password" });
   }
 });
 
