@@ -1,61 +1,96 @@
-# ShuddhoBD 🇧🇩
+# ShuddhoBD (শুদ্ধBD)
 
-[cite_start]ShuddhoBD is a transparent, technology-driven civic transparency and integrity web platform built to combat systemic corruption, public fund embezzlement, and lack of accountability in regional governance and public infrastructure development projects in Bangladesh[cite: 3219, 3221]. [cite_start]The platform bridges the information asymmetry between citizens and elected officials by offering a secure, anonymous environment for reporting irregularities, monitoring constituency expenditures, and verifying public asset disclosures[cite: 3220, 3221, 3242].
-
----
-
-## 🛠️ Tech Stack & Integrations
-
-* [cite_start]**Core Framework:** MERN Stack (MongoDB, Express.js, React.js, Node.js)[cite: 3280].
-* [cite_start]**Language:** TypeScript (Strict client and server typing)[cite: 3279].
-* [cite_start]**Database ORM:** Mongoose[cite: 3282].
-* [cite_start]**Styling:** TailwindCSS (Fully responsive cross-device interface)[cite: 3280, 3275].
-* [cite_start]**Hosting & Deployment:** Vercel[cite: 3283].
-* **Third-Party Integrations & APIs:**
-    * [cite_start]**Google Maps API:** Renders regional coordinates and analytical geo-hotmaps of submitted civic grievances[cite: 3228, 3259].
-    * [cite_start]**Cloudinary Integration:** Offloads local database weight by directly handling file compression, security validation, and hosting for photographic or video evidence[cite: 3273, 3396].
-    * [cite_start]**Cheerio & Axios Web Scraper:** Built-in server-side scraping module to automatically compile, parse, and deduplicate corruption journalism headlines from *The Business Standard*[cite: 3274, 3542].
-    * [cite_start]**OpenAI/Gemini API:** Generates automated structural audit reviews, anomaly tracing, and timeline integrity recommendations for public projects[cite: 3230, 3886].
-    * [cite_start]**Chart.js / React-ChartJS-2:** Interactive data-driven budget-versus-expenditure metrics and sector distribution diagrams[cite: 3228, 3253, 5553].
+[cite_start]ShuddhoBD is a transparent, technology-driven civic integrity platform designed to combat systemic corruption, public fund embezzlement, and lack of accountability in regional governance and public infrastructure development projects in Bangladesh[cite: 13, 14, 15]. [cite_start]By establishing a secure, anonymous environment for reporting irregularities, monitoring constituency expenditures, and verifying public candidate asset disclosures, the platform bridges the deep information asymmetry between citizens and elected representatives[cite: 14, 15, 36].
 
 ---
 
-## 🚀 Core Platform Features
+## 🎯 1. System Request & Strategic Alignment
 
-### 1. Secure Anonymous Whistleblowing & Tracking
-[cite_start]Citizens can securely document incidents of corruption by pinning precise coordinates and uploading verification media without exposing their personal identities[cite: 3224, 3252]. [cite_start]The server structurally splits user account metadata and network footprint markers (IP/Browser Fingerprints) entirely from the document before writing to the database, instantly returning a unique mathematically randomized reference code for identity-free tracking[cite: 3224, 5820, 5821, 5851].
+### Business Need
+[cite_start]Bangladesh faces persistent challenges in public governance, notably the systemic misuse of local development budgets, misrepresentation of infrastructure completion rates, and an absence of open-access public accountability tools[cite: 13, 14]. [cite_start]Citizens currently lack a safe, centralized, and truly anonymous platform to report local corruption, trace municipal spending, or cross-examine candidate asset filings[cite: 14, 15]. [cite_start]There is a critical, demographically urgent need for a transparent, secure, and user-friendly civic platform that protects whistleblowers, organizes public data sets, and leverages automated intelligence to flag potential corruption risks in real time[cite: 15].
 
-### 2. Intelligent Report Classification & Severity Scoring
-[cite_start]Upon submitting a grievance, an automated rule-and-keyword algorithm scans the text payload[cite: 3226, 6404]. [cite_start]It instantly assigns standard categorical buckets (e.g., *Budget Misuse*, *Infrastructure Delay*, *Asset Discrepancy*) and generates an objective risk index score from 0 to 100%, alerting administrative units to high-priority incidents immediately[cite: 3226, 3331, 3332, 6405].
+### Business Requirements
+* [cite_start]**Secure Anonymity Pipeline:** The platform must structurally strip all file metadata and client network identifiers before writing report documents to the database, ensuring zero traceability[cite: 18, 39].
+* [cite_start]**Cryptographic Progress Tracking:** Users must receive a mathematically randomized tracking code upon report submission to check status updates without ever establishing a trace back to their personal accounts[cite: 18].
+* [cite_start]**Evidence Validation & Challenges:** The system must accept high-resolution photographic and video uploads directly from site visits to allow citizens to contest official development metrics[cite: 19, 28, 63].
+* [cite_start]**Dynamic Regional Mapping:** An interactive mapping engine must map report locations, visually rendering regional hot-spots dynamically colored by risk status[cite: 22, 53].
+* [cite_start]**Open-Access Civic Database:** The system must visually layout Bangladesh's 300 parliamentary seats, connecting each seat to candidate asset disclosure tracking charts and regional project listings[cite: 21, 23, 54].
+* [cite_start]**Automated Audit Compilations:** Users must be able to generate and instantly export a comprehensive "Civic Audit Report" PDF on demand for any particular constituency[cite: 25].
+* [cite_start]**AI-Powered Civic Analyst:** An automated analytical module must scan financial data sheets and reporting logs to detect temporal logic failures, budget discrepancies, and retrospective data logging, providing objective risk ratings[cite: 24, 50].
 
-### 3. Parliamentary Constituency Dashboards & Civic Trust Index (CTI)
-[cite_start]Maps all 300 sequential parliamentary seats of the Jatiya Sangsad[cite: 5987]. [cite_start]Clicking any seat displays details about its representative, total annual funding progress, interactive sector expenditure breakdowns, associated local projects, and a dynamically computed Civic Trust Index (CTI) score determined by the ratio of unresolved local reports to completed tasks[cite: 3227, 3260, 3272, 6032, 6034].
+### Business Value
+* [cite_start]**Empowered Citizen Oversight:** Lowers the entry barrier for civic audit participation, allowing citizens to report irregularities safely without fear of social or professional retaliation[cite: 31].
+* [cite_start]**Actionable Watchdog Databases:** Equips watchdogs, anti-corruption journalists, and civil society groups with clean, organized regional data grids to evaluate development outcomes against actual budgets[cite: 32].
+* [cite_start]**Informed Voter Behavior:** Promotes localized democracy by showcasing representative track records, financial integrity indices, and timeline delays in an accessible format[cite: 34, 36].
+* [cite_start]**Scalable Risk Monitoring:** Incorporates machine learning assessments to minimize the human effort required to prioritize high-severity violations[cite: 35].
 
-### 4. Project Progress Challenges
-[cite_start]Empowers the collective oversight of citizens[cite: 3237]. [cite_start]If official status registries mark an infrastructure development phase as fully complete when it remains physically unfinished or neglected on-site, a citizen can submit photographic or video proof directly to queue a "Progress Challenge" for moderation[cite: 3234, 3269, 3270].
-
-### 5. AI Civic Transparency Analyst
-[cite_start]Authorized inspectors can trigger an AI-backed forensic scanning layer on project data tables[cite: 3256, 3849, 6248]. [cite_start]The pipeline detects retrospective data adjustments, unrealistic timeline completion frames, and mathematical budget discrepancies, producing clear, actionable recommendations for anti-corruption watchdogs[cite: 3230, 6251, 6263].
-
-### 6. Dynamic Civic Audit Generation
-[cite_start]Users can compile structured metrics for any constituency on demand[cite: 3231, 6407]. [cite_start]The server aggregates financial trajectories, current development project health statuses, unresolved civic metrics summaries, and overall local trust scores into a professionally compiled, printable "Civic Audit Report" PDF[cite: 6095, 6096].
+### Key Constraints & Operational Parameters
+* [cite_start]**Absolute Privacy Rules:** Data models must enforce metadata purging at the server handling level[cite: 39]. [cite_start]No submitted report details may link back to the originating user's document ID[cite: 39].
+* [cite_start]**API Reliability Dependability:** Fallbacks must be engineered to handle token throttling or rate limits when interfacing with third-party service layers[cite: 40].
+* [cite_start]**Legal Compliance & Integrity:** All candidate asset indices and project budgets must be sourced directly from verified public gazettes, preventing misinformation and liability[cite: 41].
+* [cite_start]**Demographic Accessibility:** The frontend interface must remain highly responsive, lightweight, and intuitive, accommodating varying levels of digital literacy across Bangladesh[cite: 42, 69].
 
 ---
 
-## 📡 Essential REST API Reference
+## 🛠️ 2. Comprehensive Functional Requirements
 
-### Anonymous Grievance Submission
-* [cite_start]**Endpoint:** `POST /api/reports/anonymous` [cite: 3286]
-* [cite_start]**Access:** Authenticated (Token Verification) [cite: 3288]
-* [cite_start]**Payload Type:** `multipart/form-data` [cite: 3288, 3310]
-* **Response (201):**
-    ```json
-    {
-      "message": "Report submitted autonomously and securely via Cloudinary.",
-      "trackingId": "D52351908795A695",
-      "category": "Asset Discrepancy",
-      "severity": "Medium",
-      "imageUrls": [...]
-    }
-    [cite_start]
-http://googleusercontent.com/immersive_entry_chip/0
+* [cite_start]**Anonymous Report Engine:** Enables citizens to submit geo-tagged corruption incident reports containing photographic or video evidence[cite: 46].
+* [cite_start]**Metadata De-identification Processing:** Statically strips camera metadata, user IDs, client IPs, and browser fingerprints before report serialization[cite: 18, 39].
+* [cite_start]**Tracking Code Generation:** Instantly returns a randomized tracking key to the user's screen upon report entry for anonymous follow-ups[cite: 18, 81, 84].
+* [cite_start]**Google Maps Geo-Hotspot Grid:** Employs map clustering coordinates to dynamically color regions based on outstanding report levels[cite: 22, 53].
+* [cite_start]**National Seat Grid Selector:** Provides an interactive digital layout of Bangladesh's 300 parliamentary seats, routing users directly to regional representative profiles[cite: 21, 54, 2781].
+* [cite_start]**Multi-Year Asset Trajectory Diagramming:** Displays historical wealth trends for local members of parliament (MPs) over five-year disclosure cycles[cite: 23, 2719].
+* [cite_start]**Representative Integrity Dashboard:** Aggregates localized infrastructure profiles, allocated budgets, and current sector-by-sector funding splits[cite: 21, 54, 624, 632].
+* [cite_start]**Real-Time Notification Core:** Pushes notifications to assigned administrators and users when high-severity updates or verifications occur[cite: 29, 51].
+* [cite_start]**Role-Based Moderation Dashboard:** Grants distinct interfaces for Citizens and authorized Administrators/Analysts to safely review incoming report evidence[cite: 55, 59].
+* [cite_start]**Interactive Project Timelines:** Breaks down public infrastructure initiatives into distinct development phases, revealing expected dates versus actual delays and localized phase-based costs[cite: 23, 52, 1036, 1038].
+* [cite_start]**Progress Claim Challenges:** Grants citizens the structural tool to submit contradictory media evidence when physical progress fails to match official claims[cite: 28, 63, 190].
+* [cite_start]**Automated News Scraping Pipeline:** Gathers, indexes, and deduplicates corruption journalism headlines from public external news platforms automatically via server-side routines[cite: 68, 336, 337].
+* [cite_start]**Dynamic PDF Audit Compilation:** Builds on-the-fly analytical PDF records containing local constituency details, trust indexes, outstanding incidents, and comparative budgets[cite: 25, 2889].
+* [cite_start]**Token-Based Auth Middleware:** Enforces strict path access restrictions, ensuring standard users cannot access database administrative moderation actions[cite: 59, 61].
+
+---
+
+## 🧮 3. Mathematical Models & Trust Indices
+
+To establish an impartial, data-driven rating for elected officials and constituencies, ShuddhoBD implements a customized trust tracking score.
+
+### Civic Trust Index (CTI)
+[cite_start]The **Civic Trust Index (CTI)** score is generated dynamically using verified public audit matrices[cite: 27, 66]:
+
+$$
+\text{CTI} = \max \left( 0, 100 - \left( w_1 \cdot R_u + w_2 \cdot P_d + w_3 \cdot G_p \right) \right)
+$$
+
+Where:
+* [cite_start]$R_u$ is the count of unresolved citizen complaints verified in the constituency[cite: 27, 2868].
+* [cite_start]$P_d$ is the project delay indicator measured in months[cite: 27, 2868].
+* [cite_start]$G_p$ is the verified number of "ghost projects" (funded initiatives showing zero physical presence on-site)[cite: 27, 2868].
+* $w_1, w_2, w_3$ represent weighted multipliers calibrated to the severity of the governance failure:
+  * Complaint multiplier: $w_1 = 5$
+  * Project delay multiplier: $w_2 = 10$
+  * Ghost project multiplier: $w_3 = 25$
+
+---
+
+## 🏗️ 4. System Architecture & Component Mapping
+
+ShuddhoBD uses a decoupled, high-performance architecture optimized to process heavy analytical payloads while keeping client footprint profiles minimal:
+
+* [cite_start]**Frontend Web Client:** Runs client-side sorting and search query structures[cite: 65]. [cite_start]Renders data charts via Chart.js and loads the interactive map coordinate arrays through Google Maps[cite: 22].
+* [cite_start]**Backend API Gateway:** Houses strict authentication interceptors, formats response objects, handles schema validation via Mongoose, and coordinates communication with external APIs[cite: 59, 76].
+* [cite_start]**Database Object-Relational Model:** Retains structured collections using MongoDB for candidate wealth disclosures, regional project status indexes, and moderated user files[cite: 74, 75].
+* [cite_start]**Cloud Asset Storage Integration:** Validates media file integrity, processes image/video compressions, and hosts evidence uploads securely via Cloudinary to offload database storage weight[cite: 67, 190].
+* [cite_start]**AI Civic Analyst Integrator:** Manages automated dataset checks utilizing Gemini AI endpoints to highlight mathematical budget deviations and temporal project anomalies[cite: 24, 50, 681].
+* [cite_start]**Automated Feed Aggregator:** Scrapes, indexes, and filters real-time anti-corruption headlines via Express controllers using Cheerio and Axios to keep citizens informed dynamically without manual overhead[cite: 68, 336].
+
+---
+
+## 📈 5. System Performance & Quality Metrics
+
+[cite_start]System network payloads are structured to ensure high accessibility across both desktop and low-bandwidth mobile devices in Bangladesh[cite: 42, 69]:
+
+* [cite_start]**Performance Score:** `99/100` (Achieved via progressive skeleton screens, server-side media optimization, and lightweight dependency bundles)[cite: 869, 3078].
+* [cite_start]**Accessibility Rating:** `89/100` (Adheres to clean scaling standards and structured contrasts)[cite: 3079].
+* [cite_start]**Best Practices Index:** `100/100` (Enforces strict token-handling patterns and secure route boundaries)[cite: 3080].
+* [cite_start]**Search Engine Optimization (SEO):** `83/100` (Utilizes structural semantic layouts and clean header routing)[cite: 3081].
